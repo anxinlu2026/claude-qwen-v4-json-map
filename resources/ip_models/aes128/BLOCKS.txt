@@ -1,0 +1,14 @@
+command (run in this folder): python3 aes128_model.py block NAME INPUT [INPUT ...]     every value in hex
+  NAME              inputs (in this order)                          output
+  add_round_key     state (32 digits), round key (32 digits)        state
+  inv_shift_rows    state (32 digits)                               state
+  inv_sub_bytes     state (32 digits)                               state
+  inv_mix_columns   state (32 digits)                               state
+  inv_mix_column    one column (8 digits, row 0 first)              column
+  next_round_key    round key N-1 (32 digits), N (1..10)            round key N
+  rot_word          word (8 digits)                                 word
+  sub_word          word (8 digits)                                 word
+  xtime             byte (2 digits)                                 byte      (multiplication by 02)
+  gmul              byte, byte (2 digits each)                      byte      (product in GF(2^8))
+state and round key: byte n of the 32 digits is row (n mod 4), column (n div 4). Check which order the RTL signal uses.
+use with:  rtl blockcheck --in INPUT_SIGNAL [INPUT_SIGNAL | =CONSTANT ...] --out OUTPUT_SIGNAL --model "python3 aes128_model.py block NAME"

@@ -1,0 +1,1952 @@
+{
+ "design": "aes128_decrypt",
+ "parameters": {
+  "NBW_KEY": 128,
+  "NBW_DATA": 128
+ },
+ "byte_layout": "128-bit value: byte n = bits[127-8n : 120-8n]; state row = n%4, column = n//4; round key word j = bytes 4j..4j+3. Verified by the testbench vector (key 2b7e..., ct 3925..., pt 3243...).",
+ "interface": [
+  {
+   "name": "clk",
+   "dir": "in",
+   "width": 1,
+   "role": "clock",
+   "edge": "pos",
+   "function": "Clock; all registers change on the rising edge. TB period 10 time units (clk toggles every 5)."
+  },
+  {
+   "name": "rst_async_n",
+   "dir": "in",
+   "width": 1,
+   "role": "reset",
+   "level": "low",
+   "sync": "asynchronous",
+   "timing": "TB: low for 2 time units at start; cocotb: low for one clock, then high. Asserting it clears every register.",
+   "function": "Asynchronous active-low reset: idle, counters 0, key_done 0, state 0 so o_data = 0, o_done = 0 (AA6)."
+  },
+  {
+   "name": "i_update_key",
+   "dir": "in",
+   "width": 1,
+   "role": "control",
+   "level": "high",
+   "timing": "level; only looked at in the row where i_start = 1; TB and cocotb drive it 0 in all later rows, so it must not be sampled again after the start row (AA10)",
+   "function": "1 together with i_start: take i_key as the new cipher key, expand it first (10 clocks), then decrypt. 0 together with i_start: reuse the stored expanded key."
+  },
+  {
+   "name": "i_key",
+   "dir": "in",
+   "width": 128,
+   "role": "data",
+   "layout": "byte 0 = bits[127:120] = first key byte (W[0] = bits[127:96]); FIPS 197 order",
+   "timing": "valid only in the start row (TB/cocotb set it to 0 right after); must be captured at the start edge when i_update_key = 1; ignored otherwise",
+   "function": "128-bit cipher key."
+  },
+  {
+   "name": "i_start",
+   "dir": "in",
+   "width": 1,
+   "role": "control",
+   "level": "high",
+   "timing": "one-cycle pulse (TB: set at negedge, cleared at next negedge = sampled at exactly one rising edge; cocotb: one clock); sampled at the rising edge; ignored while busy (AA7)",
+   "function": "Starts one decryption of the block on i_data."
+  },
+  {
+   "name": "i_data",
+   "dir": "in",
+   "width": 128,
+   "role": "data",
+   "layout": "byte n = bits[127-8n:120-8n] = state row n%4, column n//4 (TB comment: 39 25 84 1d is column 0)",
+   "timing": "valid only in the start row; TB/cocotb set it to 0 right after; must be latched at the start edge (AA8)",
+   "function": "128-bit ciphertext block."
+  },
+  {
+   "name": "o_done",
+   "dir": "out",
+   "width": 1,
+   "role": "control",
+   "level": "high",
+   "registered": true,
+   "timing": "0 in the row after the start row (a stale 1 would make the cocotb loop compare too early); then 1 for exactly one row when o_data holds the plaintext; 0 again (AA4). The TB waits for a rising edge of o_done, so it must be 0 before the pulse.",
+   "function": "Result valid."
+  },
+  {
+   "name": "o_data",
+   "dir": "out",
+   "width": 128,
+   "role": "data",
+   "registered": true,
+   "layout": "same byte order as i_data",
+   "timing": "correct plaintext in the row where o_done = 1 (TB reads it at the negedge inside that row; cocotb reads it in the row it sees o_done = 1); after reset 0 (AA5, AA6); value in other rows not specified (AA5)",
+   "function": "128-bit plaintext block."
+  }
+ ],
+ "blocks": [
+  {
+   "id": "load_block",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "i_data",
+     "width": 128
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_in",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always (captured into state_reg at the start edge)"
+   },
+   "python": "model.py:load_block",
+   "function": "Maps port i_data to the 4x4 state: byte n = i_data[127-8n -: 8], row n%4, column n//4. Pure wiring.",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "i_data",
+      "width": 128,
+      "kind": "data-valid-with(i_start)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "design port i_data (wire)",
+      "connected_to": [
+       {
+        "block": "design port",
+        "port": "i_data"
+       }
+      ],
+      "valid_when": "row 0 (start row)",
+      "note": "byte 0 = bits[127:120]"
+     }
+    ],
+    "outputs": [
+     {
+      "name": "state_in",
+      "width": 128,
+      "kind": "data-valid-with(i_start)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "i_data (same row)",
+      "connected_to": [
+       {
+        "block": "state_reg",
+        "port": "state_in"
+       }
+      ],
+      "valid_when": "row 0; captured by state_reg at the start edge",
+      "note": "pure wiring, same bits; row n%4, col n//4"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "design port",
+     "signals": [
+      "i_data"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "state_reg",
+     "signals": [
+      "state_in"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:load_block(i_data:int128) -> list of 16 bytes. byte n = i_data[127-8n -: 8] (n = 0..15), state row n%4, column n//4. CLI: model_cli.py block load_block <i_data 32 hex> -> 32 hex, identical digits (pure wiring)."
+  },
+  {
+   "id": "state_reg",
+   "kind": "register",
+   "inputs": [
+    {
+     "name": "state_in",
+     "width": 128
+    },
+    {
+     "name": "state_next",
+     "width": 128
+    },
+    {
+     "name": "load_sel",
+     "width": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "q",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "q holds: ciphertext after start edge; then result of the previous step; plaintext after round 11"
+   },
+   "python": "model.py:Top.state",
+   "function": "128-bit state. Loads i_data at the start edge (idle & i_start); holds during key expansion (key_cnt != 0); updates once per clock while round_cnt = 1..11; holds when idle. Reset 0.",
+   "load_when": "idle & i_start",
+   "hold_when": "key expansion or idle (no start)",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "state_in",
+      "width": 128,
+      "kind": "data-valid-with(i_start)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "load_block.state_in (wire)",
+      "connected_to": [
+       {
+        "block": "load_block",
+        "port": "state_in"
+       }
+      ],
+      "valid_when": "row 0 only",
+      "note": ""
+     },
+     {
+      "name": "state_next",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_mux.state_next (wire)",
+      "connected_to": [
+       {
+        "block": "round_mux",
+        "port": "state_next"
+       }
+      ],
+      "valid_when": "rows with round_cnt = 1..11",
+      "note": "written at the edge that ends such a row"
+     },
+     {
+      "name": "load_sel",
+      "width": 1,
+      "kind": "one-cycle pulse",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_counter.start_accept (wire)",
+      "connected_to": [
+       {
+        "block": "control (RTL's own; not specified by the architecture)",
+        "port": "start_accept"
+       }
+      ],
+      "valid_when": "row 0",
+      "note": "1 = take state_in; else take state_next when round_cnt != 0; else hold [the control that produces or consumes this signal is not specified for the HDL engineer: describe the RTL's own]"
+     }
+    ],
+    "outputs": [
+     {
+      "name": "q",
+      "width": 128,
+      "kind": "held",
+      "clock": "clk",
+      "edge": "pos",
+      "storage": "registered",
+      "latency_min_cycles": 1,
+      "latency_max_cycles": 1,
+      "latency_from": "state_in / state_next (one clock edge)",
+      "connected_to": [
+       {
+        "block": "add_round_key",
+        "port": "state",
+        "when": "round_cnt = 1"
+       },
+       {
+        "block": "inv_shift_rows",
+        "port": "state",
+        "when": "round_cnt = 2..11"
+       },
+       {
+        "block": "output_map",
+        "port": "q"
+       }
+      ],
+      "valid_when": "row 1 onward; plaintext when o_done = 1",
+      "note": "holds during key expansion and while idle (AA5). Row 1 = ciphertext (AA8)"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "load_block",
+     "signals": [
+      "state_in"
+     ],
+     "count": 1
+    },
+    {
+     "block": "round_mux",
+     "signals": [
+      "state_next"
+     ],
+     "count": 1
+    },
+    {
+     "block": "control (RTL's own; not specified by the architecture)",
+     "signals": [
+      "load_sel"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "add_round_key",
+     "signals": [
+      "q"
+     ],
+     "count": 1
+    },
+    {
+     "block": "inv_shift_rows",
+     "signals": [
+      "q"
+     ],
+     "count": 1
+    },
+    {
+     "block": "output_map",
+     "signals": [
+      "q"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:Top.state (16 bytes). Per edge: load_sel -> load_block output; else round_cnt != 0 -> round_step(...) = state_next; else hold. Reset 0. Not a pure function; no CLI."
+  },
+  {
+   "id": "round_key_store",
+   "kind": "register",
+   "inputs": [
+    {
+     "name": "rk0_in",
+     "width": 128
+    },
+    {
+     "name": "rk_next",
+     "width": 128
+    },
+    {
+     "name": "key_idx",
+     "width": 4
+    },
+    {
+     "name": "rk0_load",
+     "width": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "rk_prev",
+     "width": 128
+    },
+    {
+     "name": "rk_all",
+     "width": 1408
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "rk[0] valid from the start edge of an update; rk[n] valid from the end of key step n; all 11 valid when key_done = 1"
+   },
+   "python": "model.py:Top.rk",
+   "function": "11 x 128-bit expanded key, kept across operations (stored key reused when i_update_key = 0). rk[0] <= i_key at the start edge when i_update_key = 1; rk[n] <= next_round_key(rk[n-1], n) in key step n (n = 1..10).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "rk0_in",
+      "width": 128,
+      "kind": "data-valid-with(upd_load)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "design port i_key (wire)",
+      "connected_to": [
+       {
+        "block": "design port",
+        "port": "i_key",
+        "when": "i_update_key = 1 at start"
+       }
+      ],
+      "valid_when": "row 0 of an update start",
+      "note": "byte 0 = MSB; i_key is 0 in later rows"
+     },
+     {
+      "name": "rk_next",
+      "width": 128,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "key_expand_step.next_round_key (wire)",
+      "connected_to": [
+       {
+        "block": "key_expand_step",
+        "port": "next_round_key"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "written into rk[key_cnt]"
+     },
+     {
+      "name": "key_idx",
+      "width": 4,
+      "kind": "level",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "key_counter.key_cnt (wire)",
+      "connected_to": [
+       {
+        "block": "control (RTL's own; not specified by the architecture)",
+        "port": "key_cnt"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "selects the entry written (n) and the entry read (n-1) [the control that produces or consumes this signal is not specified for the HDL engineer: describe the RTL's own]"
+     },
+     {
+      "name": "rk0_load",
+      "width": 1,
+      "kind": "one-cycle pulse",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "key_counter.upd_load (wire)",
+      "connected_to": [
+       {
+        "block": "control (RTL's own; not specified by the architecture)",
+        "port": "upd_load"
+       }
+      ],
+      "valid_when": "row 0 of an update start",
+      "note": "[the control that produces or consumes this signal is not specified for the HDL engineer: describe the RTL's own]"
+     }
+    ],
+    "outputs": [
+     {
+      "name": "rk_prev",
+      "width": 128,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "clk",
+      "edge": "pos",
+      "storage": "registered",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 1,
+      "latency_from": "key_idx (0, read mux) / rk_next (1, written at the edge)",
+      "connected_to": [
+       {
+        "block": "key_expand_step",
+        "port": "prev_round_key"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "= rk[key_cnt-1]"
+     },
+     {
+      "name": "rk_all",
+      "width": 1408,
+      "kind": "held",
+      "clock": "clk",
+      "edge": "pos",
+      "storage": "registered",
+      "latency_min_cycles": 1,
+      "latency_max_cycles": 1,
+      "latency_from": "rk0_in / rk_next (one clock edge)",
+      "connected_to": [
+       {
+        "block": "round_key_select",
+        "port": "rk_all"
+       }
+      ],
+      "valid_when": "rk[0] from row 1 of an update; rk[n] from row n+1; all valid when key_done = 1",
+      "note": "11 x 128 bit, rk[0] first (most significant) in the concatenation used by model_cli.py round_key_select; kept across operations (AA13)"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "design port",
+     "signals": [
+      "rk0_in"
+     ],
+     "count": 1
+    },
+    {
+     "block": "key_expand_step",
+     "signals": [
+      "rk_next"
+     ],
+     "count": 1
+    },
+    {
+     "block": "control (RTL's own; not specified by the architecture)",
+     "signals": [
+      "key_idx",
+      "rk0_load"
+     ],
+     "count": 2
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "key_expand_step",
+     "signals": [
+      "rk_prev"
+     ],
+     "count": 1
+    },
+    {
+     "block": "round_key_select",
+     "signals": [
+      "rk_all"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:Top.rk (11 lists of 16 bytes). Per edge: rk0_load -> rk[0] = bytes of i_key (byte 0 = MSB); key_cnt = n != 0 -> rk[n] = next_round_key(rk[n-1], n). Not pure; no CLI."
+  },
+  {
+   "id": "key_expand_step",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "prev_round_key",
+     "width": 128
+    },
+    {
+     "name": "n",
+     "width": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "next_round_key",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "key_cnt = 1..10"
+   },
+   "python": "model.py:next_round_key",
+   "function": "One step of the key schedule: round key n-1 -> n. t = Rcon(n) xor' SubWord(RotWord(w3)); w0' = w0^t; w1' = w1^w0'; w2' = w2^w1'; w3' = w3^w2'. (Equivalent to W[i] rules of the spec for i = 4n..4n+3.)",
+   "sub_blocks": [
+    "rot_word",
+    "sub_word",
+    "rcon_step",
+    "word_xor_chain"
+   ],
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "prev_round_key",
+      "width": 128,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_key_store.rk_prev (wire)",
+      "connected_to": [
+       {
+        "block": "round_key_store",
+        "port": "rk_prev"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     },
+     {
+      "name": "n",
+      "width": 4,
+      "kind": "level",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "key_counter.key_cnt (wire)",
+      "connected_to": [
+       {
+        "block": "control (RTL's own; not specified by the architecture)",
+        "port": "key_cnt"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "Rcon index; hex digit [the control that produces or consumes this signal is not specified for the HDL engineer: describe the RTL's own]"
+     }
+    ],
+    "outputs": [
+     {
+      "name": "next_round_key",
+      "width": 128,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "prev_round_key, n (same row)",
+      "connected_to": [
+       {
+        "block": "round_key_store",
+        "port": "rk_next"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "stored by round_key_store at the end of the row (AA1)"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "round_key_store",
+     "signals": [
+      "prev_round_key"
+     ],
+     "count": 1
+    },
+    {
+     "block": "control (RTL's own; not specified by the architecture)",
+     "signals": [
+      "n"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "round_key_store",
+     "signals": [
+      "next_round_key"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:next_round_key(prev: 16 bytes, n: 1..10) -> 16 bytes. t = RconXor(SubWord(RotWord(prev[12:16])), n); w0 = prev[0:4]^t; w1 = prev[4:8]^w0; w2 = prev[8:12]^w1; w3 = prev[12:16]^w2; output w0||w1||w2||w3, each word byte 0 first. CLI: key_expand_step <prev_round_key 32 hex> <n hex> -> 32 hex."
+  },
+  {
+   "id": "rot_word",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "w3",
+     "width": 32
+    }
+   ],
+   "outputs": [
+    {
+     "name": "rot",
+     "width": 32
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:rot_word",
+   "function": "[b0,b1,b2,b3] -> [b1,b2,b3,b0] (one byte left rotation).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "w3",
+      "width": 32,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "key_expand_step.prev_round_key bytes 12..15 (wire)",
+      "connected_to": [
+       {
+        "block": "key_expand_step",
+        "port": "prev_round_key",
+        "when": "bytes 12..15 of the 128-bit input"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "word 3 of the previous round key"
+     }
+    ],
+    "outputs": [
+     {
+      "name": "rot",
+      "width": 32,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "w3",
+      "connected_to": [
+       {
+        "block": "sub_word",
+        "port": "rot"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "key_expand_step",
+     "signals": [
+      "w3"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "sub_word",
+     "signals": [
+      "rot"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:rot_word(w: 4 bytes) -> [w1,w2,w3,w0]. CLI: rot_word <w3 8 hex> -> 8 hex. Example 09cf4f3c -> cf4f3c09."
+  },
+  {
+   "id": "sub_word",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "rot",
+     "width": 32
+    }
+   ],
+   "outputs": [
+    {
+     "name": "sub",
+     "width": 32
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:sub_word",
+   "function": "Apply the forward S-box to each byte (module sbox, already tested per the task text).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "rot",
+      "width": 32,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "rot_word.rot (wire)",
+      "connected_to": [
+       {
+        "block": "rot_word",
+        "port": "rot"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "sub",
+      "width": 32,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "rot",
+      "connected_to": [
+       {
+        "block": "rcon_step",
+        "port": "sub"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "rot_word",
+     "signals": [
+      "rot"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "rcon_step",
+     "signals": [
+      "sub"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:sub_word(w: 4 bytes) -> forward S-box per byte. CLI: sub_word <8 hex> -> 8 hex. Example cf4f3c09 -> 8a84eb01."
+  },
+  {
+   "id": "rcon_step",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "sub",
+     "width": 32
+    },
+    {
+     "name": "n",
+     "width": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "t",
+     "width": 32
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:rcon_xor",
+   "function": "XOR Rcon[n] into byte 0 (the most significant byte) of the word. Rcon[1..10] = 01 02 04 08 10 20 40 80 1b 36 (already tested per the task text).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "sub",
+      "width": 32,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "sub_word.sub (wire)",
+      "connected_to": [
+       {
+        "block": "sub_word",
+        "port": "sub"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     },
+     {
+      "name": "n",
+      "width": 4,
+      "kind": "level",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "key_expand_step.n (wire)",
+      "connected_to": [
+       {
+        "block": "key_expand_step",
+        "port": "n"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "t",
+      "width": 32,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "sub, n",
+      "connected_to": [
+       {
+        "block": "word_xor_chain",
+        "port": "t"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "Rcon[n] XORed into byte 0 only"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "sub_word",
+     "signals": [
+      "sub"
+     ],
+     "count": 1
+    },
+    {
+     "block": "key_expand_step",
+     "signals": [
+      "n"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "word_xor_chain",
+     "signals": [
+      "t"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:rcon_xor(w: 4 bytes, n: 1..10) -> w with byte 0 XORed with Rcon[n] (01 02 04 08 10 20 40 80 1b 36); bytes 1..3 unchanged. CLI: rcon_step <sub 8 hex> <n hex> -> 8 hex."
+  },
+  {
+   "id": "word_xor_chain",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "prev_round_key",
+     "width": 128
+    },
+    {
+     "name": "t",
+     "width": 32
+    }
+   ],
+   "outputs": [
+    {
+     "name": "next_round_key",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:next_round_key",
+   "function": "w0' = w0^t, w1' = w1^w0', w2' = w2^w1', w3' = w3^w2' (serial XOR chain across the four words).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "prev_round_key",
+      "width": 128,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "key_expand_step.prev_round_key (wire)",
+      "connected_to": [
+       {
+        "block": "key_expand_step",
+        "port": "prev_round_key"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     },
+     {
+      "name": "t",
+      "width": 32,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "rcon_step.t (wire)",
+      "connected_to": [
+       {
+        "block": "rcon_step",
+        "port": "t"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "next_round_key",
+      "width": 128,
+      "kind": "data-valid-with(key_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "prev_round_key, t",
+      "connected_to": [
+       {
+        "block": "key_expand_step",
+        "port": "next_round_key",
+        "when": "composite output"
+       }
+      ],
+      "valid_when": "key_cnt = 1..10",
+      "note": "serial XOR chain: w1' depends on w0' etc."
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "key_expand_step",
+     "signals": [
+      "prev_round_key"
+     ],
+     "count": 1
+    },
+    {
+     "block": "rcon_step",
+     "signals": [
+      "t"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "key_expand_step",
+     "signals": [
+      "next_round_key"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:next_round_key (second half) -> w0 = prev[0:4]^t; w1 = prev[4:8]^w0; w2 = prev[8:12]^w1; w3 = prev[12:16]^w2, output 16 bytes w0||w1||w2||w3. CLI: word_xor_chain <prev_round_key 32 hex> <t 8 hex> -> 32 hex."
+  },
+  {
+   "id": "round_key_select",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "rk_all",
+     "width": 1408
+    },
+    {
+     "name": "round_cnt",
+     "width": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "round_key",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 1..11"
+   },
+   "python": "model.py:round_key_index",
+   "function": "Decryption uses round keys in reverse: round_cnt 1 -> rk[10]; round_cnt r = 2..10 -> rk[11-r] (9..1); round_cnt 11 -> rk[0]. Note rounds 1..10 of the spec = round_cnt 2..11.",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "rk_all",
+      "width": 1408,
+      "kind": "held",
+      "clock": "clk",
+      "edge": "pos",
+      "storage": "registered",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_key_store.rk_all (wire from registers)",
+      "connected_to": [
+       {
+        "block": "round_key_store",
+        "port": "rk_all"
+       }
+      ],
+      "valid_when": "all rk valid (key_done = 1)",
+      "note": ""
+     },
+     {
+      "name": "round_cnt",
+      "width": 4,
+      "kind": "level",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_counter.round_cnt (wire)",
+      "connected_to": [
+       {
+        "block": "control (RTL's own; not specified by the architecture)",
+        "port": "round_cnt"
+       }
+      ],
+      "valid_when": "round_cnt = 1..11",
+      "note": "[the control that produces or consumes this signal is not specified for the HDL engineer: describe the RTL's own]"
+     }
+    ],
+    "outputs": [
+     {
+      "name": "round_key",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_cnt (same row)",
+      "connected_to": [
+       {
+        "block": "add_round_key",
+        "port": "round_key"
+       }
+      ],
+      "valid_when": "round_cnt = 1..11",
+      "note": "index: 1 -> 10; r -> 11-r (r = 2..11)"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "round_key_store",
+     "signals": [
+      "rk_all"
+     ],
+     "count": 1
+    },
+    {
+     "block": "control (RTL's own; not specified by the architecture)",
+     "signals": [
+      "round_cnt"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "add_round_key",
+     "signals": [
+      "round_key"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:round_key_index(r: 1..11) -> index into rk: 1 -> 10; r in 2..11 -> 11-r. Output = rk[index] (16 bytes). CLI: round_key_select <rk_all 352 hex = rk[0]||rk[1]||...||rk[10], rk[0] most significant> <round_cnt hex> -> 32 hex."
+  },
+  {
+   "id": "add_round_key",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128
+    },
+    {
+     "name": "round_key",
+     "width": 128
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 1..11"
+   },
+   "python": "model.py:add_round_key",
+   "function": "Byte-wise XOR of state and round key (same byte layout).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "state",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "state_reg.q (round_cnt = 1) or inv_sub_bytes.state_out (round_cnt = 2..11) (wire)",
+      "connected_to": [
+       {
+        "block": "state_reg",
+        "port": "q",
+        "when": "round_cnt = 1"
+       },
+       {
+        "block": "inv_sub_bytes",
+        "port": "state_out",
+        "when": "round_cnt = 2..11"
+       }
+      ],
+      "valid_when": "round_cnt = 1..11",
+      "note": "two sources; the choice is made by round_cnt = 1 (mux counted in round_mux)"
+     },
+     {
+      "name": "round_key",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_key_select.round_key (wire)",
+      "connected_to": [
+       {
+        "block": "round_key_select",
+        "port": "round_key"
+       }
+      ],
+      "valid_when": "round_cnt = 1..11",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "state_out",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "state, round_key (same row)",
+      "connected_to": [
+       {
+        "block": "inv_mix_columns",
+        "port": "state",
+        "when": "round_cnt = 2..10"
+       },
+       {
+        "block": "round_mux",
+        "port": "initial_path",
+        "when": "round_cnt = 1"
+       },
+       {
+        "block": "round_mux",
+        "port": "final_path",
+        "when": "round_cnt = 11"
+       }
+      ],
+      "valid_when": "round_cnt = 1..11",
+      "note": ""
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "state_reg",
+     "signals": [
+      "state"
+     ],
+     "count": 1
+    },
+    {
+     "block": "inv_sub_bytes",
+     "signals": [
+      "state"
+     ],
+     "count": 1
+    },
+    {
+     "block": "round_key_select",
+     "signals": [
+      "round_key"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "inv_mix_columns",
+     "signals": [
+      "state_out"
+     ],
+     "count": 1
+    },
+    {
+     "block": "round_mux",
+     "signals": [
+      "state_out"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:add_round_key(state: 16 bytes, round_key: 16 bytes) -> byte-wise XOR (byte n with byte n; both row n%4, col n//4). CLI: add_round_key <state 32 hex> <round_key 32 hex> -> 32 hex."
+  },
+  {
+   "id": "inv_shift_rows",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 2..11"
+   },
+   "python": "model.py:inv_shift_rows",
+   "function": "Row r rotated right by r columns: out[r][c] = in[r][(c - r) mod 4]. Row 0 unchanged. Not used in round_cnt 1 (initial AddRoundKey).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "state",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "state_reg.q (wire)",
+      "connected_to": [
+       {
+        "block": "state_reg",
+        "port": "q",
+        "when": "round_cnt = 2..11"
+       }
+      ],
+      "valid_when": "round_cnt = 2..11",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "state_out",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "state",
+      "connected_to": [
+       {
+        "block": "inv_sub_bytes",
+        "port": "state"
+       }
+      ],
+      "valid_when": "round_cnt = 2..11",
+      "note": ""
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "state_reg",
+     "signals": [
+      "state"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "inv_sub_bytes",
+     "signals": [
+      "state_out"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:inv_shift_rows(state: 16 bytes) -> out[row r, col c] = in[row r, col (c-r) mod 4]; byte index 4*c + r. Row 0 unchanged. CLI: inv_shift_rows <state 32 hex> -> 32 hex. Example 000102..0f -> 000d0a0704010e0b0805020f0c090603."
+  },
+  {
+   "id": "inv_sub_bytes",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 2..11"
+   },
+   "python": "model.py:inv_sub_bytes",
+   "function": "Inverse S-box on each of the 16 bytes (module inv_sbox, already tested).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "state",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "inv_shift_rows.state_out (wire)",
+      "connected_to": [
+       {
+        "block": "inv_shift_rows",
+        "port": "state_out"
+       }
+      ],
+      "valid_when": "round_cnt = 2..11",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "state_out",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "state",
+      "connected_to": [
+       {
+        "block": "add_round_key",
+        "port": "state",
+        "when": "round_cnt = 2..11"
+       }
+      ],
+      "valid_when": "round_cnt = 2..11",
+      "note": ""
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "inv_shift_rows",
+     "signals": [
+      "state"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "add_round_key",
+     "signals": [
+      "state_out"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:inv_sub_bytes(state: 16 bytes) -> inverse S-box per byte (position unchanged). CLI: inv_sub_bytes <state 32 hex> -> 32 hex."
+  },
+  {
+   "id": "inv_mix_columns",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 2..10 only (bypassed in round_cnt 11)"
+   },
+   "python": "model.py:inv_mix_columns",
+   "function": "Each column multiplied by the circulant matrix [0E 0B 0D 09; 09 0E 0B 0D; 0D 09 0E 0B; 0B 0D 09 0E] in GF(2^8), polynomial 0x11B. Output after AddRoundKey (order InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "state",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "add_round_key.state_out (wire)",
+      "connected_to": [
+       {
+        "block": "add_round_key",
+        "port": "state_out",
+        "when": "round_cnt = 2..10"
+       }
+      ],
+      "valid_when": "round_cnt = 2..10",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "state_out",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "state",
+      "connected_to": [
+       {
+        "block": "round_mux",
+        "port": "round_path"
+       }
+      ],
+      "valid_when": "round_cnt = 2..10",
+      "note": "not used in round_cnt 11 (bypassed)"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "add_round_key",
+     "signals": [
+      "state"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "round_mux",
+     "signals": [
+      "state_out"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:inv_mix_columns(state: 16 bytes) -> per column c (bytes 4c..4c+3 = rows 0..3): out_r = 0E*a_r ^ ... with matrix rows [0E 0B 0D 09; 09 0E 0B 0D; 0D 09 0E 0B; 0B 0D 09 0E] applied to (a0,a1,a2,a3), GF(2^8) mod 0x11B. CLI: inv_mix_columns <state 32 hex> -> 32 hex."
+  },
+  {
+   "id": "round_mux",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "initial_path",
+     "width": 128
+    },
+    {
+     "name": "round_path",
+     "width": 128
+    },
+    {
+     "name": "final_path",
+     "width": 128
+    },
+    {
+     "name": "round_cnt",
+     "width": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_next",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt != 0"
+   },
+   "python": "model.py:round_step",
+   "function": "Selects state_next: round_cnt 1 -> ARK(state, rk[10]) (no shift/sub/mix); round_cnt 2..10 -> InvMixColumns(ARK(InvSub(InvShift(state)), key)); round_cnt 11 -> ARK(InvSub(InvShift(state)), rk[0]) (no InvMixColumns).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "initial_path",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "add_round_key.state_out (wire)",
+      "connected_to": [
+       {
+        "block": "add_round_key",
+        "port": "state_out",
+        "when": "round_cnt = 1"
+       }
+      ],
+      "valid_when": "round_cnt = 1",
+      "note": ""
+     },
+     {
+      "name": "round_path",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "inv_mix_columns.state_out (wire)",
+      "connected_to": [
+       {
+        "block": "inv_mix_columns",
+        "port": "state_out"
+       }
+      ],
+      "valid_when": "round_cnt = 2..10",
+      "note": ""
+     },
+     {
+      "name": "final_path",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "add_round_key.state_out (wire)",
+      "connected_to": [
+       {
+        "block": "add_round_key",
+        "port": "state_out",
+        "when": "round_cnt = 11"
+       }
+      ],
+      "valid_when": "round_cnt = 11",
+      "note": ""
+     },
+     {
+      "name": "round_cnt",
+      "width": 4,
+      "kind": "level",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "round_counter.round_cnt (wire)",
+      "connected_to": [
+       {
+        "block": "control (RTL's own; not specified by the architecture)",
+        "port": "round_cnt"
+       }
+      ],
+      "valid_when": "always",
+      "note": "[the control that produces or consumes this signal is not specified for the HDL engineer: describe the RTL's own]"
+     }
+    ],
+    "outputs": [
+     {
+      "name": "state_next",
+      "width": 128,
+      "kind": "data-valid-with(round_cnt)",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "inputs (same row)",
+      "connected_to": [
+       {
+        "block": "state_reg",
+        "port": "state_next"
+       }
+      ],
+      "valid_when": "round_cnt = 1..11",
+      "note": "also drives the add_round_key.state input mux (round_cnt = 1: state_reg.q, else inv_sub_bytes)"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "add_round_key",
+     "signals": [
+      "final_path",
+      "initial_path"
+     ],
+     "count": 2
+    },
+    {
+     "block": "inv_mix_columns",
+     "signals": [
+      "round_path"
+     ],
+     "count": 1
+    },
+    {
+     "block": "control (RTL's own; not specified by the architecture)",
+     "signals": [
+      "round_cnt"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "state_reg",
+     "signals": [
+      "state_next"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:round_step(state, rk, r) selects: r = 1 -> add_round_key(state, rk[10]); r = 2..10 -> inv_mix_columns(add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[11-r])); r = 11 -> add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[0]). CLI (selection only): round_mux <initial_path 32 hex> <round_path 32 hex> <final_path 32 hex> <round_cnt hex> -> the path chosen by round_cnt (1: initial, 2..10: round, 11: final), 32 hex."
+  },
+  {
+   "id": "output_map",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "q",
+     "width": 128
+    }
+   ],
+   "outputs": [
+    {
+     "name": "o_data",
+     "width": 128
+    }
+   ],
+   "timing": {
+    "type": "combinational (wiring)",
+    "valid_when": "o_done = 1"
+   },
+   "python": "model.py:output_map",
+   "function": "o_data = state_reg.q, byte n -> o_data[127-8n -: 8]. Inverse of load_block. No extra register (AA5).",
+   "ports_detail": {
+    "inputs": [
+     {
+      "name": "q",
+      "width": 128,
+      "kind": "held",
+      "clock": "clk",
+      "edge": "pos",
+      "storage": "registered",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "state_reg.q (wire)",
+      "connected_to": [
+       {
+        "block": "state_reg",
+        "port": "q"
+       }
+      ],
+      "valid_when": "always; meaningful when o_done = 1",
+      "note": ""
+     }
+    ],
+    "outputs": [
+     {
+      "name": "o_data",
+      "width": 128,
+      "kind": "held",
+      "clock": "none (combinational)",
+      "edge": "n/a",
+      "storage": "combinational",
+      "latency_min_cycles": 0,
+      "latency_max_cycles": 0,
+      "latency_from": "q (same row)",
+      "connected_to": [
+       {
+        "block": "design port",
+        "port": "o_data"
+       }
+      ],
+      "valid_when": "o_done = 1 (AA5)",
+      "note": "design port o_data; registered upstream (state_reg), so seen 1 clock after the last round step"
+     }
+    ]
+   },
+   "upstream_blocks": [
+    {
+     "block": "state_reg",
+     "signals": [
+      "q"
+     ],
+     "count": 1
+    }
+   ],
+   "downstream_blocks": [
+    {
+     "block": "design port",
+     "signals": [
+      "o_data"
+     ],
+     "count": 1
+    }
+   ],
+   "function_detail": "model.py:output_map(state: 16 bytes) -> int128; o_data[127-8n -: 8] = byte n. CLI: output_map <q 32 hex> -> 32 hex, identical digits."
+  }
+ ],
+ "edges": [
+  {
+   "from": "design port.i_data",
+   "to": "load_block.i_data"
+  },
+  {
+   "from": "load_block.state_in",
+   "to": "state_reg.state_in"
+  },
+  {
+   "from": "design port.i_key",
+   "to": "round_key_store.rk0_in",
+   "when": "i_update_key = 1 at start"
+  },
+  {
+   "from": "round_key_store.rk_prev",
+   "to": "key_expand_step.prev_round_key"
+  },
+  {
+   "from": "key_expand_step.prev_round_key",
+   "to": "rot_word.w3",
+   "when": "bytes 12..15 of the 128-bit input"
+  },
+  {
+   "from": "key_expand_step.prev_round_key",
+   "to": "word_xor_chain.prev_round_key"
+  },
+  {
+   "from": "key_expand_step.n",
+   "to": "rcon_step.n"
+  },
+  {
+   "from": "rot_word.rot",
+   "to": "sub_word.rot"
+  },
+  {
+   "from": "sub_word.sub",
+   "to": "rcon_step.sub"
+  },
+  {
+   "from": "rcon_step.t",
+   "to": "word_xor_chain.t"
+  },
+  {
+   "from": "word_xor_chain.next_round_key",
+   "to": "key_expand_step.next_round_key",
+   "when": "composite output"
+  },
+  {
+   "from": "key_expand_step.next_round_key",
+   "to": "round_key_store.rk_next"
+  },
+  {
+   "from": "round_key_store.rk_all",
+   "to": "round_key_select.rk_all"
+  },
+  {
+   "from": "round_key_select.round_key",
+   "to": "add_round_key.round_key"
+  },
+  {
+   "from": "state_reg.q",
+   "to": "add_round_key.state",
+   "when": "round_cnt = 1"
+  },
+  {
+   "from": "state_reg.q",
+   "to": "inv_shift_rows.state",
+   "when": "round_cnt = 2..11"
+  },
+  {
+   "from": "state_reg.q",
+   "to": "output_map.q"
+  },
+  {
+   "from": "inv_shift_rows.state_out",
+   "to": "inv_sub_bytes.state"
+  },
+  {
+   "from": "inv_sub_bytes.state_out",
+   "to": "add_round_key.state",
+   "when": "round_cnt = 2..11"
+  },
+  {
+   "from": "add_round_key.state_out",
+   "to": "inv_mix_columns.state",
+   "when": "round_cnt = 2..10"
+  },
+  {
+   "from": "add_round_key.state_out",
+   "to": "round_mux.initial_path",
+   "when": "round_cnt = 1"
+  },
+  {
+   "from": "add_round_key.state_out",
+   "to": "round_mux.final_path",
+   "when": "round_cnt = 11"
+  },
+  {
+   "from": "inv_mix_columns.state_out",
+   "to": "round_mux.round_path"
+  },
+  {
+   "from": "round_mux.state_next",
+   "to": "state_reg.state_next"
+  },
+  {
+   "from": "output_map.o_data",
+   "to": "design port.o_data"
+  }
+ ],
+ "note": "HDL view: data-path blocks only. Control (counters, done, key_done) is not specified here; describe the RTL's own control."
+}

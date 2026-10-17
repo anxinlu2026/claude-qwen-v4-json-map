@@ -1,0 +1,73 @@
+{
+ "start": 1792160786.9681444,
+ "runs": [
+  {
+   "n": 1,
+   "result": "FAIL",
+   "npass": 0,
+   "nfail": 2,
+   "digest": "e56bc5718146",
+   "edits": 0,
+   "probe": false,
+   "ckpt": null,
+   "t": 1792160930.6390274,
+   "first_fail": "Observed output: 00000000000000600000000000000000"
+  }
+ ],
+ "ckpts": [],
+ "baseline": {
+  "lines": [
+   "$finish called at 260 (1s)",
+   "Expected output: 3243f6a8885a308d313198a2e0370734",
+   "FAIL",
+   "Observed output: 00000000000000600000000000000000",
+   "Observed output: 00000000000000970000000000000000",
+   "VCD info: dumpfile test.vcd opened for output.",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'AddRoundKey[word=((<select+=<select+=+i[31:0][(0)+:35] expr_type=bool>[(0)+:37] expr_type=bool>)*(37'sb0100))+(+j[31:0])][7:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'SubWord[31:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'expanded_key_ff[1407:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd0][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd1][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd2][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd3][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd4][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd5][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd6][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd7][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd8][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'step_key[word='sd9][127:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'xtimes02[word=((<select+=<select+=+i[31:0][(0)+:35] expr_type=bool>[(0)+:37] expr_type=bool>)*(37'sb0100))+(+j[31:0])][7:0]').",
+   "sorry: constant selects in always_* processes are not fully supported (the process will be sensitive to all bits in 'xtimes04[word=((<select+=<select+=+i[31:0][(0)+:35] expr_type=bool>[(0)+:37] expr_type=bool>)*(37'sb0100))+(+j[31:0])][7:0]')."
+  ],
+  "counts": {
+   "\"constant selects\" notice": 118,
+   "\"VCD dumpfile opened\" notice": 1
+  }
+ },
+ "marks": {},
+ "probed": [],
+ "events": [
+  "advice",
+  "advice",
+  "sim",
+  "advice",
+  "model",
+  "advice",
+  "advice"
+ ],
+ "hash": "8c69a2306f7753266b0c43f0dce52e323374d42a",
+ "next_asks": 5,
+ "next_pending": null,
+ "order_t": 1792161213.5912862,
+ "tb_end": 260,
+ "model": {
+  "dir": "/opt/resources/ip_models/aes128",
+  "hash": "eaf501c29de3d0b7ee6ba930b2a0b53b2287df30",
+  "library": true,
+  "t": 1792160995.6542487
+ },
+ "sheet_submits": 1,
+ "sheet_pending": null,
+ "sheet_approved": true,
+ "sheet_hash": "8c89ee4000b275296a39608ac99bd01302fdb719"
+}

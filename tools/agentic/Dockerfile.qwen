@@ -1,0 +1,22 @@
+# Qwen Code agent for CVDP agentic runs: same grader base image and EDA tools as the Claude Code agent image.
+FROM multi-ai/cvdp-sim:8e894cf-arm64
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG NODE_VERSION=v22.23.3
+ARG QWEN_CODE_VERSION=0.25.0
+
+# Qwen Code needs Node >= 22 (Ubuntu 24.04 ships 18): use the official Node.js binary tarball.
+RUN apt-get update && apt-get install -y --no-install-recommends xz-utils ca-certificates && rm -rf /var/lib/apt/lists/* && \
+    curl -fsSL https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-linux-arm64.tar.xz | tar -xJ -C /usr/local --strip-components=1 && \
+    node --version && npm --version
+RUN npm install -g @qwen-code/qwen-code@${QWEN_CODE_VERSION}
+RUN chmod -R a+rX /usr/local/lib/node_modules/@qwen-code && chmod a+x /usr/local/lib/node_modules/@qwen-code/qwen-code/vendor/ripgrep/*/rg
+RUN command -v iverilog && command -v verilator && command -v yosys && qwen --version
+
+RUN useradd -m -u 1001 -s /bin/bash agent && chmod 755 /home/agent
+ENV HOME=/home/agent
+WORKDIR /app
+COPY agent_qwen.py .
+RUN chmod +x agent_qwen.py && mkdir -p /code && chown -R agent:agent /code /app
+USER agent
+ENTRYPOINT ["python3", "/app/agent_qwen.py"]

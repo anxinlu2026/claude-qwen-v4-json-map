@@ -1,0 +1,20 @@
+# Qwen Code agent + the rtl helper tool, skills and the resources folder (standards, IP models,
+# reference tools).
+# (tuning runs; not the baseline image).
+# Build context: a directory holding tools/rtl/rtl as "rtl", tools/agentic/agent_qwen.py, and the
+# project's skills/ and resources/ folders.
+FROM multi-ai/cvdp-qwen-agent:0.25.0
+USER root
+COPY rtl /usr/local/bin/rtl
+# current agent wrapper (the base image holds an older copy)
+COPY agent_qwen.py /app/agent_qwen.py
+COPY skills /opt/skills
+COPY resources /opt/resources
+# v4: port-table tools (fill_port, port_compare, make_port_skeleton)
+COPY pilot_tools /opt/pilot_tools
+RUN chmod 755 /usr/local/bin/rtl && chmod -R a+rX /opt/skills /opt/resources /opt/pilot_tools
+# the task sheet is reviewed by the orchestrator (rtl sheetsubmit) before any other rtl command runs
+ENV RTL_SHEET_REVIEW=1
+# rtl next asks the orchestrator for guidance (falls back to the tool's fixed rules if no answer arrives)
+ENV RTL_NEXT_AI=1
+USER agent

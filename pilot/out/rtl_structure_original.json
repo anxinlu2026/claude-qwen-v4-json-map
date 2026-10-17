@@ -1,0 +1,721 @@
+{
+ "top": "aes128_decrypt",
+ "modules": {
+  "aes128_decrypt": {
+   "ports": [
+    {
+     "name": "clk",
+     "direction": "input",
+     "width": 1
+    },
+    {
+     "name": "rst_async_n",
+     "direction": "input",
+     "width": 1
+    },
+    {
+     "name": "i_update_key",
+     "direction": "input",
+     "width": 1
+    },
+    {
+     "name": "i_key",
+     "direction": "input",
+     "width": 128
+    },
+    {
+     "name": "i_start",
+     "direction": "input",
+     "width": 1
+    },
+    {
+     "name": "i_data",
+     "direction": "input",
+     "width": 128
+    },
+    {
+     "name": "o_done",
+     "direction": "output",
+     "width": 1
+    },
+    {
+     "name": "o_data",
+     "direction": "output",
+     "width": 128
+    }
+   ],
+   "registers": [
+    {
+     "signal": [
+      "round_ff"
+     ],
+     "clock": [
+      "clk"
+     ],
+     "clock_edge": "pos",
+     "async_reset": [
+      "rst_async_n"
+     ],
+     "reset_level": "low",
+     "count": 1
+    },
+    {
+     "signal": [
+      "current_data_ff",
+      "o_data"
+     ],
+     "clock": [
+      "clk"
+     ],
+     "clock_edge": "pos",
+     "async_reset": [
+      "rst_async_n"
+     ],
+     "reset_level": "low",
+     "count": 16
+    }
+   ],
+   "instances": [
+    {
+     "module": "inv_sbox",
+     "count": 16,
+     "example_name": "row[0].col[0].uu_inv_sbox0",
+     "connections": {
+      "i_data": {
+       "dir": "input",
+       "signals": [
+        "MixColumns",
+        "ShiftRows"
+       ]
+      },
+      "o_data": {
+       "dir": "output",
+       "signals": [
+        "SubBytes"
+       ]
+      }
+     }
+    },
+    {
+     "module": "aes128_key_expansion",
+     "count": 1,
+     "example_name": "uu_aes128_key_expansion",
+     "connections": {
+      "clk": {
+       "dir": "input",
+       "signals": [
+        "clk"
+       ]
+      },
+      "i_key": {
+       "dir": "input",
+       "signals": [
+        "i_key"
+       ]
+      },
+      "i_start": {
+       "dir": "input",
+       "signals": []
+      },
+      "o_done": {
+       "dir": "output",
+       "signals": [
+        "key_done"
+       ]
+      },
+      "o_expanded_key": {
+       "dir": "output",
+       "signals": [
+        "expanded_key"
+       ]
+      },
+      "rst_async_n": {
+       "dir": "input",
+       "signals": [
+        "rst_async_n"
+       ]
+      }
+     }
+    }
+   ],
+   "signals": [
+    {
+     "name": "AddRoundKey",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "current_data_ff",
+      "expanded_key",
+      "o_data",
+      "round_ff"
+     ]
+    },
+    {
+     "name": "MixColumns",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "xtimes09",
+      "xtimes0b",
+      "xtimes0d",
+      "xtimes0e"
+     ]
+    },
+    {
+     "name": "ShiftRows",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "xtimes09",
+      "xtimes0b",
+      "xtimes0d",
+      "xtimes0e"
+     ]
+    },
+    {
+     "name": "SubBytes",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "instance_output",
+     "depends_on": [
+      "MixColumns",
+      "ShiftRows"
+     ]
+    },
+    {
+     "name": "clk",
+     "width": 1,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "current_data_ff",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "current_data_nx",
+      "rst_async_n"
+     ]
+    },
+    {
+     "name": "current_data_nx",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "AddRoundKey",
+      "SubBytes",
+      "current_data_ff",
+      "i_data",
+      "i_start",
+      "o_data",
+      "o_done",
+      "round_ff"
+     ]
+    },
+    {
+     "name": "expanded_key",
+     "width": 1408,
+     "shape": [],
+     "kind": "instance_output",
+     "depends_on": [
+      "clk",
+      "i_key",
+      "i_start",
+      "i_update_key",
+      "o_done",
+      "rst_async_n"
+     ]
+    },
+    {
+     "name": "i_data",
+     "width": 128,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "i_key",
+     "width": 128,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "i_start",
+     "width": 1,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "i_update_key",
+     "width": 1,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "key_done",
+     "width": 1,
+     "shape": [],
+     "kind": "instance_output",
+     "depends_on": [
+      "clk",
+      "i_key",
+      "i_start",
+      "i_update_key",
+      "o_done",
+      "rst_async_n"
+     ]
+    },
+    {
+     "name": "o_data",
+     "width": 128,
+     "shape": [],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "current_data_nx",
+      "rst_async_n"
+     ]
+    },
+    {
+     "name": "o_done",
+     "width": 1,
+     "shape": [],
+     "kind": "combinational",
+     "depends_on": [
+      "round_ff"
+     ]
+    },
+    {
+     "name": "round_ff",
+     "width": 4,
+     "shape": [],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "i_start",
+      "key_done",
+      "o_done",
+      "rst_async_n"
+     ]
+    },
+    {
+     "name": "rst_async_n",
+     "width": 1,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "xtimes02",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "AddRoundKey"
+     ]
+    },
+    {
+     "name": "xtimes04",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "AddRoundKey"
+     ]
+    },
+    {
+     "name": "xtimes08",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "AddRoundKey"
+     ]
+    },
+    {
+     "name": "xtimes09",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "AddRoundKey",
+      "xtimes08"
+     ]
+    },
+    {
+     "name": "xtimes0b",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "AddRoundKey",
+      "xtimes02",
+      "xtimes08"
+     ]
+    },
+    {
+     "name": "xtimes0d",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "AddRoundKey",
+      "xtimes04",
+      "xtimes08"
+     ]
+    },
+    {
+     "name": "xtimes0e",
+     "width": 8,
+     "shape": [
+      16
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "xtimes02",
+      "xtimes04",
+      "xtimes08"
+     ]
+    }
+   ]
+  },
+  "aes128_key_expansion": {
+   "ports": [
+    {
+     "name": "clk",
+     "direction": "input",
+     "width": 1
+    },
+    {
+     "name": "rst_async_n",
+     "direction": "input",
+     "width": 1
+    },
+    {
+     "name": "i_start",
+     "direction": "input",
+     "width": 1
+    },
+    {
+     "name": "i_key",
+     "direction": "input",
+     "width": 128
+    },
+    {
+     "name": "o_done",
+     "direction": "output",
+     "width": 1
+    },
+    {
+     "name": "o_expanded_key",
+     "direction": "output",
+     "width": 1408
+    }
+   ],
+   "registers": [
+    {
+     "signal": [
+      "expanded_key_ff",
+      "o_expanded_key",
+      "steps"
+     ],
+     "clock": [
+      "clk"
+     ],
+     "clock_edge": "pos",
+     "async_reset": [
+      "rst_async_n"
+     ],
+     "reset_level": "low",
+     "count": 1
+    },
+    {
+     "signal": [
+      "key_exp_steps_ff",
+      "o_done"
+     ],
+     "clock": [
+      "clk"
+     ],
+     "clock_edge": "pos",
+     "async_reset": [
+      "rst_async_n"
+     ],
+     "reset_level": "low",
+     "count": 1
+    }
+   ],
+   "instances": [
+    {
+     "module": "sbox",
+     "count": 40,
+     "example_name": "steps[0].uu_sbox0",
+     "connections": {
+      "i_data": {
+       "dir": "input",
+       "signals": [
+        "expanded_key_ff",
+        "o_expanded_key",
+        "steps"
+       ]
+      },
+      "o_data": {
+       "dir": "output",
+       "signals": [
+        "steps"
+       ]
+      }
+     }
+    }
+   ],
+   "signals": [
+    {
+     "name": "Rcon",
+     "width": 8,
+     "shape": [
+      10
+     ],
+     "kind": "undriven",
+     "depends_on": []
+    },
+    {
+     "name": "clk",
+     "width": 1,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "expanded_key_ff",
+     "width": 1408,
+     "shape": [],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "expanded_key_nx",
+      "rst_async_n",
+      "step_key",
+      "valid_key"
+     ]
+    },
+    {
+     "name": "expanded_key_nx",
+     "width": 1408,
+     "shape": [],
+     "kind": "combinational",
+     "depends_on": [
+      "expanded_key_ff",
+      "i_key",
+      "i_start",
+      "o_expanded_key",
+      "step_key",
+      "steps"
+     ]
+    },
+    {
+     "name": "i_key",
+     "width": 128,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "i_start",
+     "width": 1,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "key_exp_steps_ff",
+     "width": 11,
+     "shape": [],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "i_start",
+      "rst_async_n"
+     ]
+    },
+    {
+     "name": "o_done",
+     "width": 1,
+     "shape": [],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "i_start",
+      "key_exp_steps_ff",
+      "rst_async_n"
+     ]
+    },
+    {
+     "name": "o_expanded_key",
+     "width": 1408,
+     "shape": [],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "expanded_key_nx",
+      "rst_async_n",
+      "step_key",
+      "valid_key"
+     ]
+    },
+    {
+     "name": "rst_async_n",
+     "width": 1,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "step_key",
+     "width": 128,
+     "shape": [
+      10
+     ],
+     "kind": "combinational",
+     "depends_on": [
+      "expanded_key_ff",
+      "expanded_key_nx",
+      "o_expanded_key",
+      "steps"
+     ]
+    },
+    {
+     "name": "steps",
+     "width": 32,
+     "shape": [
+      10
+     ],
+     "kind": "register",
+     "depends_on": [
+      "clk",
+      "expanded_key_ff",
+      "expanded_key_nx",
+      "o_expanded_key",
+      "rst_async_n",
+      "step_key",
+      "valid_key"
+     ]
+    },
+    {
+     "name": "valid_key",
+     "width": 128,
+     "shape": [],
+     "kind": "combinational",
+     "depends_on": [
+      "expanded_key_ff",
+      "i_key",
+      "i_start",
+      "o_expanded_key",
+      "steps"
+     ]
+    }
+   ]
+  },
+  "inv_sbox": {
+   "ports": [
+    {
+     "name": "i_data",
+     "direction": "input",
+     "width": 8
+    },
+    {
+     "name": "o_data",
+     "direction": "output",
+     "width": 8
+    }
+   ],
+   "registers": [],
+   "instances": [],
+   "signals": [
+    {
+     "name": "i_data",
+     "width": 8,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "o_data",
+     "width": 8,
+     "shape": [],
+     "kind": "combinational",
+     "depends_on": [
+      "i_data"
+     ]
+    }
+   ]
+  },
+  "sbox": {
+   "ports": [
+    {
+     "name": "i_data",
+     "direction": "input",
+     "width": 8
+    },
+    {
+     "name": "o_data",
+     "direction": "output",
+     "width": 8
+    }
+   ],
+   "registers": [],
+   "instances": [],
+   "signals": [
+    {
+     "name": "i_data",
+     "width": 8,
+     "shape": [],
+     "kind": "input",
+     "depends_on": []
+    },
+    {
+     "name": "o_data",
+     "width": 8,
+     "shape": [],
+     "kind": "combinational",
+     "depends_on": [
+      "i_data"
+     ]
+    }
+   ]
+  }
+ }
+}

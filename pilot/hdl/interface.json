@@ -1,0 +1,130 @@
+{
+ "ports": [
+  {
+   "name": "clk",
+   "direction": "in",
+   "width": 1,
+   "role": "clock",
+   "active": "pos edge",
+   "behaviour": "other: clock, period 10 time units (toggles every 5)",
+   "behaviour_evidence": "testbench lines 71 (always #5 clk = ~clk) and 74 (clk = 0); probe RUN #2 samples at rising edges t=5,15,25,...",
+   "function": "System clock; all registers change on the rising edge.",
+   "arch": "same",
+   "note": "n/a"
+  },
+  {
+   "name": "rst_async_n",
+   "direction": "in",
+   "width": 1,
+   "role": "reset",
+   "active": "low",
+   "behaviour": "level",
+   "behaviour_evidence": "testbench lines 76-80 (rst_async_n=1, #1, rst_async_n=0, #2, rst_async_n=1); rtl_structure.json (async_reset: rst_async_n, reset_level: low, clock_edge: pos)",
+   "function": "Asynchronous active-low reset; clears round_ff, current_data_ff, key_done and o_done.",
+   "arch": "same",
+   "note": "n/a"
+  },
+  {
+   "name": "i_update_key",
+   "direction": "in",
+   "width": 1,
+   "role": "control",
+   "active": "high",
+   "behaviour": "one-cycle pulse",
+   "behaviour_evidence": "testbench lines 45 and 50 (set to update_key, then cleared to 0); probe RUN #2 (i_update_key=1 at t=25, 0 at t=35, x at t=5 and t=15)",
+   "function": "1 with i_start: take i_key as the new cipher key, expand it (10 clocks), then decrypt. 0 with i_start: reuse the stored expanded key.",
+   "arch": "same",
+   "note": "i_update_key is x (undefined) before the first Simple_test because the testbench initial block does not drive it; see assumption H3."
+  },
+  {
+   "name": "i_key",
+   "direction": "in",
+   "width": 128,
+   "role": "data",
+   "active": "n/a",
+   "behaviour": "level",
+   "behaviour_evidence": "testbench lines 31 and 51 (set to the key, then cleared to 0)",
+   "function": "128-bit cipher key; valid only in the start row; captured at the start edge when i_update_key=1.",
+   "arch": "same",
+   "note": "n/a"
+  },
+  {
+   "name": "i_start",
+   "direction": "in",
+   "width": 1,
+   "role": "control",
+   "active": "high",
+   "behaviour": "one-cycle pulse",
+   "behaviour_evidence": "testbench lines 46 and 49 (set to 1, then cleared to 0); probe RUN #2 (i_start=1 at t=25 and t=135; 0 otherwise)",
+   "function": "Starts one decryption of the block on i_data; sampled at the rising edge.",
+   "arch": "same",
+   "note": "n/a"
+  },
+  {
+   "name": "i_data",
+   "direction": "in",
+   "width": 128,
+   "role": "data",
+   "active": "n/a",
+   "behaviour": "level",
+   "behaviour_evidence": "testbench lines 32 and 52 (set to the ciphertext, then cleared to 0); testbench lines 33-43 (4x4 matrix comment)",
+   "function": "128-bit ciphertext block; valid only in the start row; latched at the start edge.",
+   "arch": "same",
+   "note": "n/a"
+  },
+  {
+   "name": "o_done",
+   "direction": "out",
+   "width": 1,
+   "role": "control",
+   "active": "high",
+   "behaviour": "one-cycle pulse",
+   "behaviour_evidence": "probe RUN #2 (o_done=1 at t=5, t=125, t=245; 0 at t=15..115, t=135..235, t=255); RTL 'assign o_done = (round_ff == 4\\'d0);'",
+   "function": "Result valid; high for one cycle when o_data holds the plaintext.",
+   "arch": "different",
+   "note": "In the RTL o_done is combinational (= round_ff==0) and is high right after reset (t=5 in probe RUN #2), before any start; the architecture expects o_done=0 after reset and only high at the end of an operation, and marks it as registered. See assumptions H1 and H2."
+  },
+  {
+   "name": "o_data",
+   "direction": "out",
+   "width": 128,
+   "role": "data",
+   "active": "n/a",
+   "behaviour": "level",
+   "behaviour_evidence": "testbench lines 57-62 (o_data compared to 128'h3243f6a8885a308d313198a2e0370734); probe RUN #2 (observed output 00000000000000600000000000000000 and 00000000000000970000000000000000 at the two o_done pulses, both FAIL)",
+   "function": "128-bit plaintext block; correct plaintext in the row where o_done=1.",
+   "arch": "same",
+   "note": "In the RTL o_data is combinational from current_data_ff (a register); the architecture marks it as registered. Functionally similar (holds the plaintext when o_done=1). See assumption H2."
+  }
+ ],
+ "clock_and_reset": {
+  "clock": "clk (1 bit, positive edge, period 10 time units)",
+  "reset": "rst_async_n (1 bit, active low)",
+  "reset_level": "low",
+  "reset_type": "async",
+  "evidence": "rtl_structure.json (async_reset: rst_async_n, reset_level: low, clock_edge: pos for round_ff and current_data_ff); testbench lines 76-80 (rst_async_n=1, #1, rst_async_n=0, #2, rst_async_n=1); probe RUN #2 (samples at rising edges of clk)"
+ },
+ "assumptions": [
+  {
+   "id": "H1",
+   "subject": "o_done",
+   "statement": "o_done is high right after reset (t=5 in probe RUN #2), before any start, because the RTL computes o_done = (round_ff == 0) and round_ff resets to 0. The architecture's schedule expects o_done=0 after reset and only high at the end of an operation. Whether the post-reset high level is intended or a fault is not determined in this order (ALIGN-INTERFACE, not fault-finding).",
+   "source": "probe",
+   "status": "open"
+  },
+  {
+   "id": "H2",
+   "subject": "o_done, o_data",
+   "statement": "In the RTL o_done and o_data are combinational (o_done = round_ff==0; o_data = current_data_ff), while the architecture marks both as registered. The functional behaviour (one-cycle pulse for o_done; plaintext held when o_done=1 for o_data) is the same, but the implementation (combinational vs registered) differs.",
+   "source": "rtl",
+   "status": "open"
+  },
+  {
+   "id": "H3",
+   "subject": "i_update_key",
+   "statement": "i_update_key is x (undefined) from t=0 to t=20 in the testbench because the initial block does not drive it (only i_start=0 is set); it becomes defined only when Simple_test assigns it. The architecture assumes i_update_key=0 in all rows after the start row.",
+   "source": "testbench",
+   "status": "open"
+  }
+ ]
+}

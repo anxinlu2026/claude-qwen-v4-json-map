@@ -1,0 +1,12 @@
+networks:
+  default:
+    external: true
+    name: cvdp-bridge-dataset-189750e2
+services:
+  sanity:
+    command: pytest /src/test_runner.py -s -v -o cache_dir=/rundir/harness/.cache
+    env_file: ./src/.env
+    image: multi-ai/cvdp-sim:8e894cf-arm64
+    volumes:
+    - ./src:/src/
+    working_dir: /code/rundir

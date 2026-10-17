@@ -1,0 +1,1220 @@
+#!/usr/bin/env python3
+"""rtl - helper for RTL debug sessions: compile+simulate, probe signals, edit by line number, checkpoints.
+
+Spec: skills_trial/rtl_tool_spec.md.  Only operations are provided: no reference models, no hidden tests.
+Environment: RTL_ROOT (default /code; design in <root>/rtl, testbench in <root>/verif),
+             RTL_WORK (default /tmp/rtlwork; run output, checkpoints and state live here).
+Needs iverilog/vvp on PATH and the Python standard library only.
+"""
+import collections, difflib, hashlib, json, os, re, shutil, subprocess, sys, time
+
+ROOT = os.environ.get('RTL_ROOT', '/code')
+WORK = os.environ.get('RTL_WORK', '/tmp/rtlwork')
+STATE = os.path.join(WORK, 'state.json')
+KEYWORDS = {'input', 'output', 'inout', 'logic', 'wire', 'reg', 'bit', 'signed', 'unsigned', 'parameter', 'localparam',
+            'begin', 'end', 'if', 'else', 'for', 'assign', 'always', 'always_ff', 'always_comb', 'module', 'endmodule',
+            'generate', 'endgenerate', 'genvar', 'int', 'integer', 'function', 'task', 'case', 'endcase', 'initial'}
+# Messages that are folded into one summary line. Whole-line patterns only (never a keyword such as "sorry"/"warning").
+FOLD = [('"constant selects" notice', re.compile(r"^.*: sorry: constant selects in always_\* processes are not fully supported \(the process will be sensitive to all bits in '.*'\)\.?$")),
+        ('"VCD dumpfile opened" notice', re.compile(r'^VCD info: dumpfile .* opened for output\.$'))]
+
+
+def die(msg):
+    print(msg); sys.exit(1)
+
+
+def srcs(sub):
+    d = os.path.join(ROOT, sub)
+    return sorted(os.path.join(d, f) for f in os.listdir(d) if f.endswith(('.sv', '.v'))) if os.path.isdir(d) else []
+
+
+def rel(p):
+    return os.path.relpath(p, ROOT)
+
+
+def load():
+    os.makedirs(WORK, exist_ok=True)
+    if os.path.exists(STATE):
+        return json.load(open(STATE))
+    st = {'start': time.time(), 'runs': [], 'ckpts': [], 'baseline': None, 'marks': {}, 'probed': [], 'events': []}
+    os.makedirs(os.path.join(WORK, 'orig'), exist_ok=True)  # untouched copy of the design, taken on first use
+    for f in srcs('rtl'):
+        shutil.copy2(f, os.path.join(WORK, 'orig', os.path.basename(f)))
+    st['hash'] = design_hash(); snap_last()
+    save(st)
+    return st
+
+
+def save(st):
+    json.dump(st, open(STATE, 'w'), indent=1)
+
+
+def design_hash():
+    h = hashlib.sha1()
+    for f in srcs('rtl'):
+        h.update(os.path.basename(f).encode()); h.update(open(f, 'rb').read())
+    return h.hexdigest()
+
+
+def snap_last():
+    """Keep a copy of the design as the tool last left it (used to undo changes made outside the tool)."""
+    dst = os.path.join(WORK, 'ckpt', 'last'); os.makedirs(dst, exist_ok=True)
+    for f in srcs('rtl'):
+        shutil.copy2(f, os.path.join(dst, os.path.basename(f)))
+
+
+def design_signals():
+    d = design()
+    return [s_ for n_, md in d['mods'].items() if md['file'] not in d['tb'] for s_ in md['sigs']]
+
+
+def row_status(st):
+    """Status of every RTL signal: not_compared until a comparison is recorded with `rtl mark`
+    (match, mismatch, fixed, nogolden); recheck = its fix was reverted and the level upstream is to be compared again."""
+    out = {}
+    for s_ in dict.fromkeys(design_signals()):
+        m = st.get('marks', {}).get(s_)
+        out[s_] = m['status'] if m else 'not_compared'
+    return out
+
+
+# ---------- light RTL parsing: names only (modules, instances, declared signals) ----------
+def strip_comments(t):
+    t = re.sub(r'/\*.*?\*/', lambda m: re.sub(r'[^\n]', ' ', m.group(0)), t, flags=re.S)
+    return re.sub(r'//[^\n]*', '', t)
+
+
+def parse(files):
+    mods = {}
+    for f in files:
+        t = strip_comments(open(f, errors='replace').read())
+        for m in re.finditer(r'\bmodule\s+(\w+)(.*?)\bendmodule\b', t, re.S):
+            mods[m.group(1)] = {'file': f, 'body': m.group(2), 'insts': [], 'sigs': {}}
+    for name, md in mods.items():
+        body = md['body']
+        for m in re.finditer(r'(?m)^[ \t]*(\w+)\s*(?:#\s*\((?:[^()]|\([^()]*\))*\)\s*)?(\w+)\s*\(', body):
+            if m.group(1) in mods and m.group(2) not in KEYWORDS:
+                # instances inside a generate-for get an indexed scope name that is not resolved here
+                pre = body[:m.start()]
+                in_gen = pre.count('generate') - 2 * pre.count('endgenerate') > 0 and re.search(r'for\s*\(\s*genvar', pre.split('endgenerate')[-1] or '')
+                md['insts'].append((m.group(2), m.group(1), bool(in_gen)))
+        params = {k: v for k, v in re.findall(r"\b(?:localparam|parameter)\s+(?:\w+\s+)?(\w+)\s*=\s*(?:\d*'d)?(\d+)\b", body)}
+        head = re.compile(r"\b(?:(input|output|inout)\b\s*(?:logic|wire|reg|bit)?|(?:logic|wire|reg|bit))\b\s*(?:signed\b\s*)?((?:\[[^\]]*\]\s*)*)")
+        item = re.compile(r'\s*(\w+)\s*((?:\[[^\]]*\]\s*)*)')
+        gens = [(g.start(), g.end()) for g in re.finditer(r'\bgenerate\b.*?\bendgenerate\b', body, re.S) if re.search(r'for\s*\(\s*genvar', g.group(0))]
+        pos = 0
+        while True:
+            h = head.search(body, pos)
+            if not h:
+                break
+            pos = h.end()
+            while True:
+                it = item.match(body, pos)
+                if not it or it.group(1) in KEYWORDS:
+                    break
+                dims = []
+                for d in re.findall(r'\[([^\]]*)\]', it.group(2)):
+                    d = d.strip(); d = params.get(d, d)
+                    r = re.fullmatch(r'(\d+)\s*:\s*(\d+)', d)
+                    dims.append(abs(int(r.group(1)) - int(r.group(2))) + 1 if r else int(d) if d.isdigit() else None)
+                md['sigs'].setdefault(it.group(1), {'range': ' '.join(h.group(2).split()), 'dir': h.group(1) or '', 'dims': dims,
+                                                    'gen': any(a <= h.start() < b for a, b in gens)})
+                pos = it.end()
+                nxt = re.match(r'\s*,', body[pos:])
+                if not nxt:
+                    break
+                pos += nxt.end()
+    return mods
+
+
+def design(tb=None):
+    rtl, tbs = srcs('rtl'), ([tb] if tb else srcs('verif'))
+    if not rtl:
+        die(f'No design files found in {ROOT}/rtl.')
+    mods = parse(rtl + tbs)
+    used = {i[1] for m in mods.values() for i in m['insts']}
+    tops = [n for n, m in mods.items() if m['file'] in tbs and n not in used]
+    top = tops[0] if tops else None
+    scopes = {}  # hierarchical path -> module name
+
+    def walk(path, mod):
+        scopes[path] = mod
+        for inst, child, in_gen in mods[mod]['insts']:
+            if not in_gen:
+                walk(path + '.' + inst, child)
+    if top:
+        walk(top, top)
+    return {'rtl': rtl, 'tb': tbs, 'mods': mods, 'top': top, 'scopes': scopes}
+
+
+def resolve(d, name):
+    """Signal name (optionally 'scope.signal', optional [..] suffix) -> (full path, info) or (None, hint)."""
+    if d['top'] and name.startswith(d['top'] + '.'):
+        # full hierarchical path given (needed for signals inside generate loops): used as written
+        return name, {'range': '?', 'dims': [], 'dir': '', 'raw': True, 'suffix': ''}
+    m = re.fullmatch(r'([\w.]+?)((?:\[[^\]]*\])*)', name)
+    if not m:
+        return None, f'cannot read signal name "{name}"'
+    base, suffix = m.group(1), m.group(2)
+    scope_hint, sig = base.rsplit('.', 1) if '.' in base else (None, base)
+    hits = []
+    for path, mod in d['scopes'].items():
+        if sig in d['mods'][mod]['sigs']:
+            if scope_hint is None or path.endswith('.' + scope_hint) or path == scope_hint or mod == scope_hint or scope_hint in path.split('.')[-1] or scope_hint in mod:
+                hits.append((path, mod))
+    if len(hits) > 1 and scope_hint is None:
+        # prefer the place where the signal is not just a port passed down; if still ambiguous, ask
+        inner = [h for h in hits if not d['mods'][h[1]]['sigs'][sig]['dir']]
+        if len(inner) == 1:
+            hits = inner
+        else:
+            return None, f'signal "{sig}" exists in several places: ' + ', '.join(f'{d["scopes"][p]}.{sig}' for p, _ in hits) + '. Write module.signal.'
+    if not hits:
+        if scope_hint and scope_hint.split('.')[0] in (d['top'],) + tuple(d['scopes']):
+            return base + suffix, {'range': '?', 'dims': [], 'dir': '', 'raw': True}  # full path given by the user (e.g. inside a generate block)
+        allsigs = sorted({(s, mod) for mod in set(d['scopes'].values()) for s in d['mods'][mod]['sigs']})
+        near = difflib.get_close_matches(sig, sorted({s for s, _ in allsigs}), n=5, cutoff=0.5)
+        where = '; '.join(f'{n} ({", ".join(sorted({m for s, m in allsigs if s == n}))})' for n in near)
+        return None, f'signal "{name}" not found.' + (f' Similar names: {where}' if near else ' See: rtl signals')
+    path, mod = hits[0]
+    if d['mods'][mod]['sigs'][sig].get('gen'):
+        return None, f'"{sig}" is declared inside a generate loop in module {mod}: write its full path with the loop block name and index, e.g. {path}.BLOCK[0].{sig} (see the "begin : BLOCK" label in the source).'
+    return path + '.' + sig + suffix, dict(d['mods'][mod]['sigs'][sig], suffix=suffix)
+
+
+# ---------- running the simulator ----------
+def run_sim(d, st, probe_text=None, timeout=50, until=None):
+    n = len(st['runs']) + 1
+    rd = os.path.join(WORK, 'run'); os.makedirs(rd, exist_ok=True)
+    if not d['top']:
+        die('No testbench found in ' + ROOT + '/verif (nothing to simulate). Use: rtl sim --tb FILE with your own test.')
+    files = d['rtl'] + d['tb']
+    cmd = ['iverilog', '-g2012', '-s', d['top']]
+    if probe_text:
+        pf = os.path.join(rd, 'rtl_probe.sv'); open(pf, 'w').write(probe_text)
+        cmd += ['-s', 'rtl_probe']; files = files + [pf]
+    # the simulation is stopped at a time limit, so a testbench that waits for something that never happens still
+    # gives its output. The limit is `until` (asked for by the caller), else ten times the time the untouched
+    # design needed, else (first run) none. The stop is a module of its own: the testbench file is not touched.
+    limit = until if until else (10 * st['tb_end'] if st.get('tb_end') else None)
+    sf = os.path.join(rd, 'rtl_stop.sv')
+    open(sf, 'w').write('module rtl_stop;\n' + (f'  initial begin #{int(limit)} $display("@STOP %0d", $time); $finish; end\n' if limit else '') +
+                        '  final $display("@END %0d", $time);\nendmodule\n')
+    cmd += ['-s', 'rtl_stop']; files = files + [sf]   # last in the list: it takes the time unit of the testbench
+    out = os.path.join(rd, 'sim.out')
+    c = subprocess.run(cmd + ['-o', out] + files, capture_output=True, text=True, cwd=rd)
+    comp = [l for l in (c.stdout + c.stderr).splitlines() if l.strip()]
+    sim, timed_out = [], False
+    if c.returncode == 0:
+        try:
+            r = subprocess.run(['vvp', out], capture_output=True, text=True, cwd=rd, timeout=timeout)
+            sim = (r.stdout + r.stderr).splitlines()
+        except subprocess.TimeoutExpired as e:
+            timed_out = True
+            sim = ((e.stdout or b'').decode(errors='replace') if isinstance(e.stdout, bytes) else (e.stdout or '')).splitlines()
+    os.makedirs(os.path.join(WORK, 'runs'), exist_ok=True)
+    open(os.path.join(WORK, 'runs', f'{n}.full.txt'), 'w').write('### compile\n' + '\n'.join(comp) + '\n### simulation\n' + '\n'.join(sim) + '\n')
+    global LAST_STOP, LAST_END
+    LAST_STOP = next((int(l.split()[1]) for l in sim if l.startswith('@STOP ')), None)
+    LAST_END = next((int(l.split()[1]) for l in sim if l.startswith('@END ')), None)
+    sim = [l for l in sim if not l.startswith(('@STOP ', '@END ')) and 'rtl_stop.sv' not in l]
+    return n, c.returncode, comp, sim, timed_out
+
+
+LAST_STOP = LAST_END = None
+
+
+def nokey(l):
+    return re.sub(r'^\S+?:\d+: ', '', l)  # same message on a shifted line number is still the same message
+
+
+def fold(lines, baseline):
+    """Split lines into (shown, folded counts). A line is folded only if it matches a FOLD pattern AND was already
+    present in the first run of the untouched design; anything new is always shown."""
+    shown, counts = [], collections.Counter()
+    for l in lines:
+        label = next((lab for lab, pat in FOLD if pat.match(l)), None)
+        if label and (baseline is None or nokey(l) in baseline['lines']):
+            counts[label] += 1
+        else:
+            shown.append(l)
+    return shown, counts
+
+
+def n_edits():
+    n = 0
+    for f in srcs('rtl'):
+        o = os.path.join(WORK, 'orig', os.path.basename(f))
+        a = open(o, errors='replace').read().splitlines() if os.path.exists(o) else []
+        n += sum(1 for op in difflib.SequenceMatcher(None, a, open(f, errors='replace').read().splitlines()).get_opcodes() if op[0] != 'equal')
+    return n
+
+
+def cmd_sim(args, probe=None):
+    tb = args[args.index('--tb') + 1] if '--tb' in args else None
+    until = int(args[args.index('--until') + 1]) if '--until' in args else None
+    d, st = design(tb), load()
+    n, rc, comp, sim, timed_out = run_sim(d, st, probe[0] if probe else None, until=until)
+    if not probe and not tb and LAST_STOP is None and LAST_END is not None and st.get('tb_end') is None and n_edits() == 0:
+        st['tb_end'] = LAST_END   # how long the testbench runs on the untouched design
+    if st['baseline'] is None and n_edits() == 0 and not probe:
+        st['baseline'] = {'lines': sorted({nokey(l) for l in comp + sim}), 'counts': {lab: sum(1 for l in comp + sim if pat.match(l)) for lab, pat in FOLD}}
+    cshown, ccount = fold(comp, st['baseline'])
+    psim = [l for l in sim if not l.startswith('@P ')]
+    sshown, scount = fold(psim, st['baseline'])
+    counts = ccount + scount
+    npass = sum(1 for l in sshown if re.search(r'\bpass(ed)?\b', l, re.I))
+    nfail = sum(1 for l in sshown if re.search(r'\b(fail(ed)?|mismatch)\b', l, re.I) or re.match(r'\s*(ERROR|FATAL):', l))
+    result = 'COMPILE ERROR' if rc else 'TIMEOUT' if timed_out else 'NOT FINISHED' if (LAST_STOP is not None and not probe) else 'FAIL' if nfail else 'PASS' if npass else 'UNKNOWN'
+    digest = hashlib.sha1('\n'.join(sshown).encode()).hexdigest()[:12]
+    prev = next((r for r in reversed(st['runs']) if r['result'] != 'COMPILE ERROR' and not r.get('probe')), None)
+    edits = n_edits()
+    if not probe:
+        st.setdefault('events', []).append('sim')
+    st['runs'].append({'n': n, 'result': result, 'npass': npass, 'nfail': nfail, 'digest': digest, 'edits': edits, 'probe': bool(probe),
+                       'ckpt': st['ckpts'][-1]['id'] if st['ckpts'] else None, 't': time.time(),
+                       'first_fail': next((l.strip() for i, l in enumerate(sshown) if re.search(r'observed|actual|got', l, re.I)), '')})
+    save(st)
+    hidden = ''.join(f'\n(hidden: {c} x {lab}' + (f', original design had {st["baseline"]["counts"].get(lab, 0)}' if st['baseline'] else '') + f'; full text: rtl log {n} --full)' for lab, c in counts.items())
+    if rc:
+        errs = [l for l in cshown if 'error' in l.lower()] or cshown
+        print(f'RUN #{n}  compile: ERROR ({len(errs)} message(s))   design: {edits} edit(s) vs original')
+        print('\n'.join(cshown[:25]) + (f'\n... {len(cshown) - 25} more line(s): rtl log {n}' if len(cshown) > 25 else '') + hidden)
+        return None
+    cmp_ = '' if not prev else '   vs RUN #%d: %s' % (prev['n'], 'same output' if prev['digest'] == digest else 'output changed')
+    if probe:
+        return n, edits, sim, cshown, hidden
+    print(f'RUN #{n}  compile: OK   result: {result}' + (f' ({nfail} FAIL, {npass} PASS)' if result in ('FAIL', 'PASS') else '') + cmp_ + f'   design: {edits} edit(s) vs original')
+    if prev and prev['digest'] == digest and prev.get('edits') != edits and result != 'PASS':
+        print('The edit made since that run changed nothing in the testbench output. Repeat the comparison for the driver you edited; if it does not agree, '
+              'or cannot be checked because an earlier stage is still wrong: rtl revert, and deal with the earlier stage first.')
+    if timed_out:
+        print('Simulation did not finish within the time limit (possible endless loop or a wait that never completes).')
+    if LAST_STOP is not None:
+        print(f'The testbench had not finished at simulation time {LAST_STOP}' + (f' (the untouched design finished at {st["tb_end"]})' if st.get('tb_end') else '') +
+              '. It is waiting for something that has not happened by then. Probe the signals it waits for (rtl probe ... --to T stops at T), '
+              f'or let it run longer with: rtl sim --until N' + (f'   ({nfail} FAIL, {npass} PASS printed so far)' if nfail or npass else ''))
+    if cshown:
+        print('compile messages:\n' + '\n'.join(cshown[:15]) + (f'\n... {len(cshown) - 15} more: rtl log {n}' if len(cshown) > 15 else ''))
+    body = sshown if len(sshown) <= 30 else sshown[:18] + [f'... {len(sshown) - 28} line(s) omitted: rtl log {n} ...'] + sshown[-10:]
+    print('\n'.join(body) + hidden)
+    if result == 'UNKNOWN':
+        print('(No PASS/FAIL wording in the testbench output: judge the result from the lines above.)')
+
+
+def cmd_signals(args):
+    d = design()
+    word = args[0].lower() if args else None
+    if not d['top']:
+        print('(no testbench found: listing design modules only)')
+    paths = d['scopes'] or {m: m for m in d['mods']}
+    for path, mod in paths.items():
+        sigs = d['mods'][mod]['sigs']
+        if word is None:
+            print(f'{path}   (module {mod}, {len(sigs)} signals)')
+            continue
+        hit = {s: i for s, i in sigs.items() if word in s.lower() or word == mod.lower() or word in path.split('.')[-1].lower()}
+        if hit:
+            print(path)
+            for s, i in hit.items():
+                arr = ' x '.join(str(x or '?') for x in i['dims'])
+                print(f'  {s:<22} {i["range"] or "1 bit":<14}' + (f' array {arr}' if arr else '') + (f'   {i["dir"]}' if i['dir'] else '') + ('   (inside a generate loop)' if i.get('gen') else ''))
+    gen = [(m, i[0]) for m, md in d['mods'].items() for i in md['insts'] if i[2]]
+    if word is None:
+        print('Use: rtl signals WORD   (signal name part, module name or instance name)')
+        if gen:
+            print('Not listed: instances created inside generate loops (' + ', '.join(sorted({f"{m}/{i}" for m, i in gen})) + ') and signals declared inside generate blocks; give their full path to rtl probe.')
+
+
+def cmd_probe(args, collect=False):
+    opts, names, i = {'--from': None, '--to': None, '--when': None, '--max': '40', '--clk': None, '--tb': None}, [], 0
+    while i < len(args):
+        if args[i] in opts:
+            opts[args[i]] = args[i + 1]; i += 2
+        else:
+            names.append(args[i]); i += 1
+    if not names:
+        die('Usage: rtl probe SIGNAL [SIGNAL ...] [--from T] [--to T] [--when "cond"] [--max N] [--clk SIGNAL] [--tb FILE]')
+    d = design(opts['--tb'])
+    if not d['top']:
+        die('No testbench found: nothing to simulate.')
+    cols, errs = [], []
+
+    def col_for(nme):
+        path, info = resolve(d, nme)
+        if path is None:
+            errs.append(info); return None
+        # unpacked array without an element index: print all elements joined, first index first
+        given = len(re.findall(r'\[', info.get('suffix', '')))
+        unp = info['dims']
+        left = unp[given:] if given <= len(unp) else []
+        if left:
+            if any(x is None for x in left) or (lambda p: p > 64)(__import__('functools').reduce(lambda a, b: a * b, left, 1)):
+                errs.append(f'"{nme}" is an array ({" x ".join(str(x or "?") for x in unp)}): give an element, e.g. {nme}' + ''.join('[0]' for _ in left)); return None
+            idx = [[]]
+            for n_ in left:
+                idx = [a + [k] for a in idx for k in range(n_)]
+            expr = '{' + ','.join(path + ''.join(f'[{k}]' for k in a) for a in idx) + '}'
+            return (nme + ''.join('[]' for _ in left), expr, '%h')
+        else:
+            one = (not info['range']) and not re.search(r':', info.get('suffix', '')) and info['range'] != '?'
+            nr = re.fullmatch(r'\[\s*(\d+)\s*:\s*(\d+)\s*\]', info['range'] or '')
+            small = nr and abs(int(nr.group(1)) - int(nr.group(2))) < 8 and not info.get('suffix')
+            return (nme, path, '%h' if collect else '%b' if one else '%0d' if small else '%h')
+
+    for nme in names:
+        if '+' in nme:   # several signals joined into one value, the first one in the highest position
+            parts = [col_for(x.strip()) for x in nme.split('+') if x.strip()]
+            if all(parts):
+                cols.append((nme, '{' + ','.join(x[1] for x in parts) + '}', '%h'))
+        else:
+            c_ = col_for(nme)
+            if c_:
+                cols.append(c_)
+    if errs:
+        die('PROBE ERROR: ' + '\nPROBE ERROR: '.join(errs))
+    clk = opts['--clk']
+    if clk:
+        cpath, info = resolve(d, clk)
+        if cpath is None:
+            die('PROBE ERROR (clock): ' + info)
+    else:
+        tops = d['mods'][d['top']]['sigs']
+        c = next((s for s in ('clk', 'clock', 'i_clk', 'clk_i', 'CLK', 'aclk') if s in tops), None) or next((s for s in tops if 'clk' in s.lower() or 'clock' in s.lower()), None)
+        if not c:
+            die('PROBE ERROR: no clock signal found in the testbench (design may be purely combinational). Use --clk SIGNAL to choose the sampling signal.')
+        cpath = d['top'] + '.' + c
+    cond = []
+    if opts['--from']:
+        cond.append(f'$time >= {int(opts["--from"])}')
+    if opts['--to']:
+        cond.append(f'$time <= {int(opts["--to"])}')
+    if opts['--when']:
+        def sub(m):
+            p, _ = resolve(d, m.group(0))
+            return p if p and m.group(0) not in KEYWORDS else m.group(0)
+        cond.append('(' + re.sub(r"(?<![\w'.$])[A-Za-z_][\w.]*", sub, opts['--when']) + ')')
+    mx = int(opts['--max'])
+    fmt = ' | '.join(f for _, _, f in cols)
+    probe = ('module rtl_probe;\n  integer n = 0;\n  always @(posedge ' + cpath + ')\n    if (' + (' && '.join(cond) or '1') + ') begin\n'
+             f'      if (n < {mx}) $display("@P %0t | {fmt}", $time, ' + ', '.join(e for _, e, _ in cols) + ');\n'
+             f'      else if (n == {mx}) $display("@P MORE");\n      n = n + 1;\n    end\nendmodule\n')
+    r = cmd_sim((['--tb', opts['--tb']] if opts['--tb'] else []) + (['--until', str(int(opts['--to']) + 1)] if opts['--to'] else []), probe=(probe,))
+    st_ = load()
+    if r is not None:   # a probe that did not compile showed nothing: it is not counted
+        st_.setdefault('probed', []).extend(w for nme in names for w in re.findall(r'[A-Za-z_]\w*', nme))
+        if not collect:   # the probe inside rtl blockcheck is not counted against the limit of probes without a record
+            st_.setdefault('events', []).append('probe')
+        save(st_)
+    if r is None:
+        print('PROBE ERROR: the design or the probe did not compile (messages above). If the messages mention rtl_probe.sv, a probed name does not exist at that place: check it with rtl signals WORD (a name can be written without its path; only a signal inside a generate loop needs the full path that rtl signals shows).')
+        sys.exit(1)
+    n, edits, sim, cshown, hidden = r
+    rows = [l[3:].split(' | ') for l in sim if l.startswith('@P ') and l != '@P MORE']
+    more = any(l == '@P MORE' for l in sim)
+    if collect:
+        return n, edits, [[x.strip() for x in r_] for r_ in rows], more
+    heads = ['t'] + [c[0] for c in cols]
+    w = [max(len(heads[k]), *(len(r_[k].strip()) for r_ in rows)) if rows else len(heads[k]) for k in range(len(heads))]
+    print(f'PROBE on RUN #{n} (design: {edits} edit(s) vs original)   {len(rows)} row(s), sampled at each rising edge of {cpath}')
+    print('(each row shows the values just before that clock edge, i.e. what the flip-flops see at that edge)')
+    if not rows:
+        print('No rows: the clock never rose within the selected time/condition. Check --from/--to/--when, or whether the simulation ended early.')
+    else:
+        print(' | '.join(heads[k].rjust(w[k]) for k in range(len(heads))))
+        for r_ in rows:
+            print(' | '.join(r_[k].strip().rjust(w[k]) for k in range(len(heads))))
+    if more:
+        print(f'... more rows exist: narrow with --from/--to/--when or raise --max (now {mx})')
+    if LAST_STOP is not None and not opts['--to']:
+        print(f'(the simulation was stopped at time {LAST_STOP}: the testbench had not finished. --to T stops at the time you choose.)')
+    tb_out = [l for l in fold([l for l in sim if not l.startswith('@P ')], load()['baseline'])[0] if re.search(r'pass|fail|expected|observed|error', l, re.I)]
+    if tb_out:
+        print('testbench said: ' + ' / '.join(l.strip() for l in tb_out[:6]))
+    left = PROBES_WITHOUT_MARK - probes_since(load())
+    if not os.environ.get('RTL_NEXT_AI'):
+      print('Record what this shows before looking further' + (f' ({left} more probe(s) allowed without a record)' if left > 0 else ' (no further probe until something is recorded)') +
+          ': data values -> rtl blockcheck (the tool compares with the model); control sequence -> rtl mark SIGNAL match|mismatch "kind=control ...".' + blocks_hint(load()))
+
+
+def find_file(name):
+    for f in srcs('rtl') + srcs('verif'):
+        if f == name or rel(f) == name or os.path.basename(f) == os.path.basename(name):
+            return f
+    die(f'File "{name}" not found. Files: ' + ' '.join(rel(f) for f in srcs('rtl') + srcs('verif')))
+
+
+def cmd_show(args):
+    if len(args) < 1:
+        die('Usage: rtl show FILE [FIRST LAST]')
+    f = find_file(args[0]); lines = open(f, errors='replace').read().splitlines()
+    a = int(args[1]) if len(args) > 1 else 1
+    b = min(int(args[2]) if len(args) > 2 else a + 59, len(lines))
+    print(f'{rel(f)}  lines {a}-{b} of {len(lines)}')
+    for k in range(a, b + 1):
+        print(f'{k:>4}: {lines[k - 1]}')
+
+
+def checkpoint(st, note):
+    cid = f'c{len(st["ckpts"]) + 1}'
+    dst = os.path.join(WORK, 'ckpt', cid); os.makedirs(dst, exist_ok=True)
+    for f in srcs('rtl'):
+        shutil.copy2(f, os.path.join(dst, os.path.basename(f)))
+    st['ckpts'].append({'id': cid, 'note': note, 't': time.time(), 'edits': n_edits()})
+    save(st)
+    return cid
+
+
+def cmd_replace(args):
+    if len(args) != 3:
+        die('Usage: rtl replace FILE FIRST LAST   (new text on standard input; FIRST..LAST are replaced)\nTo insert without removing, use: rtl insert FILE AFTER_LINE')
+    st = load(); f = find_file(args[0])
+    if f not in srcs('rtl'):
+        die('Only design files under rtl/ can be edited with this command (the testbench is the reference and is left untouched).')
+    a, b = int(args[1]), int(args[2]); lines = open(f, errors='replace').read().split('\n')
+    if not (1 <= a <= b + 1 <= len(lines) + 1):
+        die(f'Line range {a}-{b} is outside the file (1-{len(lines)}).')
+    new = sys.stdin.read().rstrip('\n').split('\n') if not sys.stdin.isatty() else []
+    located = [k for k, v in st.get('marks', {}).items() if v['status'] == 'mismatch']
+    ev_ = st.get('events', [])
+    last_rep = max([i for i, e in enumerate(ev_) if e == 'replace'], default=-1)
+    settled = any(e in ('mark_fixed', 'revert') for e in ev_[last_rep + 1:]) if last_rep >= 0 else True
+    if not settled and not os.environ.get('RTL_NO_GATES'):
+        die('STOP: the previous edit has not been settled. Repeat the same comparison for the driver you edited; then either rtl mark SIGNAL fixed "golden=... observed=... source=..." or rtl revert. Only then make another edit.')
+    if not located and not os.environ.get('RTL_NO_GATES'):
+        die('STOP: no comparison has located a faulty driver yet. Probe the inputs and outputs of the code against golden; when a '
+            'driver has matching inputs and a wrong output, record it with: rtl mark SIGNAL mismatch "golden vs observed". Then edit that driver. '
+            'If you believe a change is needed without such a comparison, ask first: rtl ask "..."')
+    cid = checkpoint(st, f'before edit of {rel(f)} lines {a}-{b}')
+    old = lines[a - 1:b]
+    lines[a - 1:b] = new
+    open(f, 'w').write('\n'.join(lines))
+    print(f'CHECKPOINT {cid} saved (state before this edit).  {rel(f)}: lines {a}-{b} ({len(old)} line(s)) replaced by {len(new)} line(s)')
+    for k, l in enumerate(old[:12]):
+        print(f'- {a + k:>4}: {l}')
+    if len(old) > 12:
+        print(f'-  ... {len(old) - 12} more removed line(s)')
+    for k, l in enumerate(new[:12]):
+        print(f'+ {a + k:>4}: {l}')
+    if len(new) > 12:
+        print(f'+  ... {len(new) - 12} more new line(s)')
+    st['hash'] = design_hash(); snap_last(); st['probed'] = []; st.setdefault('events', []).append('replace')
+    for k in located:
+        st['marks'][k]['attempts'] = st['marks'][k].get('attempts', 0) + 1
+    save(st)
+    print(f'Next: rtl sim, then repeat the same comparison for this driver (rtl probe ...). rtl blockcheck (data) records it as fixed when it agrees with the model; a control signal: rtl mark SIGNAL fixed "kind=control ...". If it does not hold: rtl revert {cid}')
+
+
+def cmd_insert(args):
+    if len(args) != 2:
+        die('Usage: rtl insert FILE AFTER_LINE   (text on standard input is inserted after that line; 0 = at the top)')
+    n = int(args[1])
+    cmd_replace([args[0], str(n + 1), str(n)])
+
+
+def cmd_checkpoint(args):
+    st = load(); cid = checkpoint(st, ' '.join(args) or 'manual')
+    print(f'CHECKPOINT {cid} saved: {st["ckpts"][-1]["note"]}  ({n_edits()} edit(s) vs original)')
+
+
+def cmd_revert(args):
+    st = load()
+    if len(args) != 1:
+        die('Usage: rtl revert CHECKPOINT   (e.g. c3, "original", or "last" = the design as rtl last left it)   Checkpoints: ' + ' '.join(c['id'] for c in st['ckpts']))
+    src = os.path.join(WORK, 'orig') if args[0] == 'original' else os.path.join(WORK, 'ckpt', args[0])
+    if not os.path.isdir(src):
+        die(f'Checkpoint "{args[0]}" not found. Checkpoints: original ' + ' '.join(c['id'] for c in st['ckpts']))
+    import tempfile
+    tmp = tempfile.mkdtemp()
+    for f in os.listdir(src):
+        shutil.copy2(os.path.join(src, f), os.path.join(tmp, f))  # copy first: 'last' is overwritten by the checkpoint below
+    keep = checkpoint(st, f'before revert to {args[0]}')
+    for f in srcs('rtl'):
+        s = os.path.join(tmp, os.path.basename(f))
+        if os.path.exists(s):
+            shutil.copy2(s, f)
+    back = [k for k, v in st.get('marks', {}).items() if v['status'] == 'mismatch' and v.get('attempts', 0) >= 1]
+    for k in back:
+        st['marks'][k]['status'] = 'recheck'
+    st['hash'] = design_hash(); snap_last(); st['probed'] = []; st.setdefault('events', []).append('revert'); save(st)
+    print(f'Design files restored to {args[0]} ({n_edits()} edit(s) vs original). The state before the revert was kept as {keep}.')
+    if back:
+        print('The fix of ' + ', '.join(back) + ' did not hold. Go back one level: the golden value, or an input judged "match", may be wrong. '
+              'Probe the stage upstream of this driver against the model again, then record it with rtl mark.')
+
+
+def cmd_diff(args):
+    st = load()
+    base = os.path.join(WORK, 'ckpt', args[0]) if args and args[0] != 'original' else os.path.join(WORK, 'orig')
+    if not os.path.isdir(base):
+        die(f'Checkpoint "{args[0]}" not found.')
+    out = []
+    for f in srcs('rtl'):
+        o = os.path.join(base, os.path.basename(f))
+        a = open(o, errors='replace').read().splitlines() if os.path.exists(o) else []
+        b = open(f, errors='replace').read().splitlines()
+        dl = list(difflib.unified_diff(a, b, 'before', rel(f), n=1, lineterm=''))
+        if dl:
+            out += [rel(f)] + ['  ' + l for l in dl[2:]]
+    print(f'{n_edits()} edit(s) vs original' + (f' (showing changes since {args[0]})' if args else ''))
+    print('\n'.join(out[:80]) + (f'\n... {len(out) - 80} more line(s)' if len(out) > 80 else '') if out else '(no differences)')
+
+
+def cmd_status(args):
+    st = load(); d = design()
+    print('Design: ' + ' '.join(rel(f) for f in d['rtl']) + ' | testbench: ' + (' '.join(rel(f) for f in d['tb']) or 'none') + f' | top: {d["top"]}')
+    print(f'Edits vs original: {n_edits()} (rtl diff)   Checkpoints: ' + (' '.join(c['id'] for c in st['ckpts'][-8:]) or 'none'))
+    runs = [r for r in st['runs'] if not r.get('probe')]
+    if runs:
+        print('Runs: ' + '   '.join(f'#{r["n"]} {r["result"]}' + (f' ({r["nfail"]}F/{r["npass"]}P)' if r['result'] in ('FAIL', 'PASS') else '') + f' [{r["edits"]} edits]' for r in runs[-8:]))
+        last = runs[-1]
+        changed = [f'#{b["n"]}' for a, b in zip(runs, runs[1:]) if a['digest'] != b['digest']]
+        print(f'Last run #{last["n"]}: {last["result"]}' + (f'   {last["first_fail"]}' if last['first_fail'] else '') + ('   output changed at runs: ' + ' '.join(changed[-6:]) if changed else ''))
+    else:
+        print('Runs: none yet (rtl sim)')
+    print(f'Probe runs: {sum(1 for r in st["runs"] if r.get("probe"))}   Elapsed since first use: {(time.time() - st["start"]) / 60:.0f} min')
+
+
+def cmd_log(args):
+    if not args:
+        die('Usage: rtl log RUN_NUMBER [--full]')
+    p = os.path.join(WORK, 'runs', f'{int(args[0])}.full.txt')
+    if not os.path.exists(p):
+        die(f'Run {args[0]} not found.')
+    lines = open(p).read().splitlines()
+    if '--full' not in args:
+        lines = fold(lines, load()['baseline'])[0]
+        lines = [l for l in lines if not l.startswith('@P ')]
+    print('\n'.join(lines[:400]) + (f'\n... {len(lines) - 400} more line(s) in {p}' if len(lines) > 400 else ''))
+
+
+def cmd_ask(args):
+    """Send a message to the orchestrator and block until an answer arrives (or the wait limit passes)."""
+    if not args:
+        die('Usage: rtl ask "what you tried, what you found, what you need"')
+    st = load()
+    box = os.environ.get('RTL_ASK_DIR', os.path.join(ROOT, 'rundir', '.orchestrator'))
+    os.makedirs(box, exist_ok=True)
+    resume = st.get('ask_pending')
+    n = resume if resume else st.get('asks', 0) + 1
+    st['asks'] = n; st['ask_pending'] = n; save(st)
+    status = []
+    runs = [x for x in st['runs'] if not x.get('probe')]
+    if runs:
+        status.append(f'last run #{runs[-1]["n"]}: {runs[-1]["result"]}')
+    status.append(f'{n_edits()} edit(s) vs original; {len(st["runs"])} simulator runs; {(time.time() - st["start"]) / 60:.0f} min since first use')
+    req, ans = os.path.join(box, f'request_{n}.md'), os.path.join(box, f'answer_{n}.md')
+    why = must_ask(st)
+    rows = row_status(st)
+    table = '; '.join(f'{k}={v}' for k, v in rows.items() if v in ('mismatch', 'recheck', 'fixed', 'match', 'nogolden'))
+    if resume:
+        print(f'Request {n} is still waiting for its answer: waiting on it again (the request text is unchanged).', flush=True)
+    else:
+      open(req, 'w').write(' '.join(args) + '\n\n[status] ' + '; '.join(status) + (f'\n[forced by tool] {why}' if why else '') +
+                         (f'\n[comparisons recorded] {table}' if table else '\n[comparisons recorded] none') + '\n')
+    limit = int(os.environ.get('RTL_ASK_WAIT', '1800')); t0 = time.time()
+    print(f'Request {n} sent to the orchestrator. Waiting for the answer (up to {limit // 60} min). If this command is cut off, run rtl ask again: it resumes the same request.', flush=True)
+    while time.time() - t0 < limit:
+        if os.path.exists(ans):
+            time.sleep(1)
+            st = load(); st['ask_needed'] = None; st['ask_pending'] = None; st.setdefault('events', []).append('ask')
+            for k, v in st.get('marks', {}).items():   # the reported cases start afresh after the answer
+                if v['status'] == 'nogolden':
+                    v['status'] = 'asked'
+                if v['status'] in ('mismatch', 'recheck'):
+                    v['attempts'] = 0
+            save(st)
+            print(f'ORCHESTRATOR ANSWER {n}:\n' + open(ans).read().strip())
+            return
+        time.sleep(3)
+    print(f'No answer within {limit // 60} min. Do not change the method on your own: summarise what is confirmed and what is not, and stop.')
+
+
+SHEET = os.environ.get('RTL_TASK_SHEET', '/tmp/task_sheet.md')
+LIB = os.environ.get('RTL_RESOURCES', '/opt/resources')
+MODEL_WORK = os.environ.get('RTL_MODEL_WORK', '/tmp/ip_work')
+SHEET_ITEMS = ['task type', 'goal', 'files to', 'must not', 'resources', 'golden source', 'facts', 'observed failure', 'testbench trust', 'testbench coverage', 'check']
+
+
+def dir_hash(d):
+    h = hashlib.sha1()
+    for dp, dn, fn in sorted(os.walk(d)):
+        if '__pycache__' in dp:
+            continue
+        for f in sorted(fn):
+            h.update(os.path.relpath(os.path.join(dp, f), d).encode()); h.update(open(os.path.join(dp, f), 'rb').read())
+    return h.hexdigest()
+
+
+def model_ok(st):
+    """None when a validated model is on record and unchanged; otherwise the reason it is not."""
+    m = st.get('model')
+    if not m:
+        return (f'no validated golden model is on record. Search {LIB} (INDEX.md) for a model of the function; if there is none, build one in '
+                f'{MODEL_WORK}/NAME from the standard, with a validate.py that compares its outputs with an independent trusted source. Then: rtl model DIR')
+    if not os.path.isdir(m['dir']) or dir_hash(m['dir']) != m['hash']:
+        return f'the model in {m["dir"]} was changed after its validation. Validate it again: rtl model {m["dir"]}'
+    return None
+
+
+def blocks_hint(st, full=False):
+    """Where the blocks of the validated model are listed (BLOCKS.txt in its folder), or the list itself."""
+    m = st.get('model')
+    if not m:
+        return ''
+    f = os.path.join(m['dir'], 'BLOCKS.txt')
+    if not os.path.exists(f):
+        return ''
+    return ('\nBlocks of the validated model (' + f + '):\n' + open(f, errors='replace').read().rstrip()) if full else f'  Model blocks: {f}'
+
+
+def cmd_model(args):
+    """Run a model's validation and record the result. Probing and editing need a validated model."""
+    if len(args) != 1:
+        die(f'Usage: rtl model DIR   (a model folder in {LIB}/ip_models, or one you built in {MODEL_WORK}/NAME; it must hold validate.py or validate.sh)')
+    d = os.path.realpath(args[0])
+    lib = d.startswith(os.path.realpath(LIB) + os.sep)
+    if not os.path.isdir(d) or not (lib or d.startswith(os.path.realpath(MODEL_WORK) + os.sep)):
+        die(f'A model is a folder in the library ({LIB}/ip_models/NAME) or one you built in {MODEL_WORK}/NAME.')
+    v = next((x for x in ('validate.py', 'validate.sh') if os.path.exists(os.path.join(d, x))), None)
+    if not v:
+        die(f'{d} has no validate.py / validate.sh. A model is validated by a script that compares its outputs with an independent trusted source '
+            '(an established implementation, values printed by the standard, the testbench values) and ends with a line HARNESS PASS or HARNESS FAIL.')
+    import subprocess
+    try:
+        r = subprocess.run((['python3', '-B'] if v.endswith('.py') else ['sh']) + [v], cwd=d, capture_output=True, text=True, timeout=600)
+        out, rc = (r.stdout + r.stderr).strip(), r.returncode
+    except subprocess.TimeoutExpired:
+        out, rc = 'validation did not finish within 10 minutes', 1
+    passed = rc == 0 and 'HARNESS PASS' in out
+    tail = '\n'.join(out.splitlines()[-25:])
+    print(f'MODEL VALIDATION in {d} ({v}): ' + ('PASS' if passed else 'FAIL') + '\n' + tail)
+    st = load()
+    if not passed:
+        st['model'] = None; save(st)
+        print('Not validated: its values are not golden. Correct the model (not the validation) and run rtl model again; if it cannot be made to pass: rtl ask "..."')
+        return
+    if not lib:  # a model built or changed in the session: the orchestrator reviews what it was validated against
+        doc = os.path.join(WORK, 'model_review.md')
+        files = sorted(os.path.relpath(os.path.join(dp, f), d) for dp, dn, fn in os.walk(d) for f in fn if '__pycache__' not in dp)
+        open(doc, 'w').write(f'Model folder: {d}\nFiles: ' + ', '.join(files) + f'\n\n## {v}\n```\n' + open(os.path.join(d, v), errors='replace').read() +
+                             '\n```\n\n## validation output\n```\n' + tail + '\n```\n')
+        if not review('model', doc, 'model'):
+            st = load(); st['model'] = None; save(st)
+            print('The model is NOT accepted. Do what the review asks, then run rtl model again.')
+            return
+        st = load()
+    st['model'] = {'dir': d, 'hash': dir_hash(d), 'library': lib, 't': time.time()}
+    st.setdefault('events', []).append('model'); save(st)
+    print('The model is validated and on record: its values can be used as golden (rtl next tells the next step).' + blocks_hint(st, full=True))
+
+
+def review(kind, path, flag):
+    """Send a document to the orchestrator and wait for APPROVED / REDO."""
+    st = load()
+    box = os.environ.get('RTL_ASK_DIR', os.path.join(ROOT, 'rundir', '.orchestrator'))
+    os.makedirs(box, exist_ok=True)
+    cur = hashlib.sha1(open(path, 'rb').read()).hexdigest()
+    pend = st.get(flag + '_pending')
+    if pend and pend['hash'] == cur:   # the same document is still waiting (the earlier wait was cut off)
+        k = pend['k']
+        req, ans = os.path.join(box, f'request_{kind}_{k}.md'), os.path.join(box, f'answer_{kind}_{k}.md')
+        print(f'Submission {k} is still waiting for its review: waiting on it again.', flush=True)
+    else:
+        k = st.get(flag + '_submits', 0) + 1; st[flag + '_submits'] = k; st[flag + '_pending'] = {'k': k, 'hash': cur}; save(st)
+        req, ans = os.path.join(box, f'request_{kind}_{k}.md'), os.path.join(box, f'answer_{kind}_{k}.md')
+        open(req, 'w').write(f'[{kind} submitted for review, submission {k}]\n\n' + open(path, errors='replace').read())
+    limit = int(os.environ.get('RTL_ASK_WAIT', '1800')); t0 = time.time()
+    print(f'Submission {k} sent to the orchestrator. Waiting for the review (up to {limit // 60} min). If this command is cut off, run it again: it resumes the same submission.', flush=True)
+    while time.time() - t0 < limit:
+        if os.path.exists(ans):
+            time.sleep(1)
+            text = open(ans).read().strip()
+            ok = text.upper().startswith('APPROVED')
+            st = load(); st[flag + '_approved'] = ok; st[flag + '_pending'] = None; st['order_t'] = time.time()   # waiting for a review is not the agent's time
+            st[flag + '_hash'] = hashlib.sha1(open(path, 'rb').read()).hexdigest() if ok else None
+            save(st)
+            print(f'ORCHESTRATOR REVIEW {k}: ' + text)
+            return ok
+        time.sleep(3)
+    print(f'No review within {limit // 60} min. Do not continue without approval: summarise your state and stop.')
+    return False
+
+
+def cmd_sheetsubmit(args):
+    """Hand the task sheet to the orchestrator for review and wait. Every other command needs its approval."""
+    os.environ['RTL_SKIP_SHEET_REVIEW'] = '1'
+    gate('sheetcheck')  # the mechanical checks (all items present and filled in) come first
+    ok = review('sheet', SHEET, 'sheet')
+    print('The task sheet is approved: go on with the task.' if ok else
+          'The task sheet is NOT approved. Do what the review asks, update it, then run: rtl sheetsubmit')
+
+
+def cmd_blockcheck(args):
+    """Feed the probed inputs of a block to the validated model and compare the model's output with the probed output."""
+    ins, out, model, rest, i, cur = [], None, None, [], 0, None
+    while i < len(args):
+        a = args[i]
+        if a == '--in':
+            cur = 'in'
+        elif a == '--out':
+            out = args[i + 1]; i += 1; cur = None
+        elif a == '--model':
+            model = args[i + 1]; i += 1; cur = None
+        elif a in ('--from', '--to', '--when', '--max', '--clk', '--tb'):
+            rest += [a, args[i + 1]]; i += 1; cur = None
+        elif cur == 'in':
+            ins.append(a)
+        else:
+            die('Unexpected argument: ' + a)
+        i += 1
+    if not ins or not out or not model:
+        die('Usage: rtl blockcheck --in SIGNAL [SIGNAL ...] --out SIGNAL --model "COMMAND" [--when "cond"] [--from T] [--to T] [--max N]\n'
+            '  COMMAND is run in the folder of the validated model with the probed input values appended (hex, in the order given;\n'
+            '  an input written =VALUE is passed to the model as that constant). %s in COMMAND is also accepted as the place of a value.\n'
+            '  It must print the expected output value in hex. Signal names are written as for rtl probe.\n'
+            '  A value held in several signals is written with +, first part highest: --in "a[0]+a[1]+a[2]+a[3]" --out "y[0]+y[1]+y[2]+y[3]".\n'
+            '  e.g. rtl blockcheck --in a_sig b_sig =3 --out y_sig --model "python3 model.py block NAME"' + blocks_hint(load(), full=True))
+    st = load(); mdir = st['model']['dir']
+    if '--max' not in rest:
+        rest += ['--max', '12']
+    consts = {k: a[1:] for k, a in enumerate(ins) if a.startswith('=')}   # =VALUE: a constant argument for the model, not a signal
+    sigs_in = [a for a in ins if not a.startswith('=')]
+    n, edits, rows, more = cmd_probe(sigs_in + [out] + rest, collect=True)
+    import shlex, subprocess
+    cache, res = {}, []
+    for r_ in rows:
+        t, pv, vout = r_[0], list(r_[1:1 + len(sigs_in)]), r_[1 + len(sigs_in)]
+        vin = [consts[k] if k in consts else pv.pop(0) for k in range(len(ins))]
+        if any(re.search(r'[xXzZ]', v) for v in vin):
+            res.append((t, vin, vout, '-', 'input unknown (x/z)')); continue
+        key = tuple(vin)
+        if key not in cache:
+            try:
+                # input values are appended to the command; a command written with %s placeholders gets them filled in order instead
+                parts, left = [], list(vin)
+                for tok in shlex.split(model):
+                    while '%s' in tok and left:
+                        tok = tok.replace('%s', left.pop(0), 1)
+                    if '%s' not in tok:
+                        parts.append(tok)
+                argv_ = parts + left
+                c = subprocess.run(argv_, cwd=mdir, capture_output=True, text=True, timeout=30)
+            except subprocess.TimeoutExpired:
+                die('BLOCKCHECK ERROR: the model command did not finish within 30 s.')
+            if c.returncode != 0 or not c.stdout.strip():
+                die(f'BLOCKCHECK ERROR: the model command failed in {mdir}: ' + ' '.join(argv_) + '\n' + (c.stderr or c.stdout).strip()[-400:] +
+                    '\nThe command is run as: COMMAND followed by the probed input values in hex, in the order of --in (a constant is written =VALUE after --in). '
+                    'Each block takes the inputs listed below, in that order.' + blocks_hint(st, full=True))
+            cache[key] = c.stdout.strip().split()[-1].lower().replace('0x', '').replace('_', '')
+        exp = cache[key]
+        try:
+            same = (not re.search(r'[xXzZ]', vout)) and int(vout, 16) == int(exp, 16)
+        except ValueError:
+            die(f'BLOCKCHECK ERROR: the model printed "{exp}", which is not a hex value.')
+        res.append((t, vin, vout, exp, 'match' if same else 'MISMATCH'))
+    print(f'BLOCKCHECK on RUN #{n} (design: {edits} edit(s) vs original)   model: {model}   (in {mdir})')
+    heads = ['t'] + ins + [out + ' (RTL)', 'model', 'result']
+    table = [[t] + vin + [vout, exp, verdict] for t, vin, vout, exp, verdict in res]
+    w = [max([len(heads[k])] + [len(x[k]) for x in table]) for k in range(len(heads))]
+    print(' | '.join(heads[k].rjust(w[k]) for k in range(len(heads))))
+    for x in table:
+        print(' | '.join(x[k].rjust(w[k]) for k in range(len(heads))))
+    if more:
+        print('... more rows exist: narrow with --from/--to/--when or raise --max')
+    judged = [x for x in res if x[4] in ('match', 'MISMATCH')]
+    bad = [x for x in judged if x[4] == 'MISMATCH']
+    if not judged:
+        print('No row could be compared (no rows, or inputs unknown). Choose the time/condition where the block is in use.'); return
+    sig = next((w_ for w_ in reversed(re.findall(r'[A-Za-z_]\w*', out)) if w_ in design_signals()), None)
+    print(f'RESULT: {len(judged) - len(bad)} of {len(judged)} compared row(s) match the model.')
+    if not sig:
+        print('(the output is not a design signal by name: nothing recorded)'); return
+    st = load(); prev = st.setdefault('marks', {}).get(sig, {}); ev = st.setdefault('events', [])
+    edited = prev.get('status') == 'mismatch' and 'replace' in ev[prev.get('ev', 0):]
+    status = 'mismatch' if bad else ('fixed' if edited else 'match')
+    b = bad[0] if bad else judged[0]
+    note = f'golden={b[3]} observed={b[2]} source=model block "{model}" on probed inputs {" ".join(b[1])} at t={b[0]} ({len(judged) - len(bad)}/{len(judged)} rows match)'
+    st['marks'][sig] = {'status': status, 'note': note, 'run': len(st['runs']), 'attempts': prev.get('attempts', 0), 'ev': prev.get('ev', len(ev)) if edited or (bad and prev.get('status') == 'mismatch') else len(ev)}
+    ev.append('mark_' + status); save(st)
+    if bad and edited:
+        print(f'{sig}: still mismatch after your edit. The fix did not hold: rtl revert, then go back one level.')
+    elif bad:
+        print(f'{sig}: recorded as mismatch. With the inputs it actually receives, this block does not give the model\'s output: the fault is inside it. '
+              'If it is more than one driver, break it down (blockcheck its parts); at a single driver, fix that driver.')
+    elif edited:
+        print(f'{sig}: recorded as fixed. Now: rtl sim')
+    else:
+        print(f'{sig}: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).')
+
+
+def cmd_history(args):
+    """Earlier commands and what they gave (also from earlier conversations): the way to find a comparison again."""
+    hp = os.path.join(WORK, 'history.jsonl')
+    n, word = 12, None
+    for x in args:
+        if x.isdigit():
+            n = int(x)
+        else:
+            word = x.lower()
+    rows = []
+    if os.path.exists(hp):
+        for line in open(hp, errors='replace').read().splitlines():
+            try:
+                rows.append(json.loads(line))
+            except Exception:
+                pass
+    keep = [r for r in rows if r['cmd'].split(' ')[0] in ('sim', 'probe', 'blockcheck', 'mark', 'replace', 'insert', 'revert', 'model')
+            and (not word or word in (r.get('line') or r['cmd']).lower())]
+    if not keep:
+        print('No earlier command' + (f' containing "{word}"' if word else '') + '.'); return
+    print(f'Last {min(n, len(keep))} of {len(keep)} command(s)' + (f' containing "{word}"' if word else '') + ' (oldest first):')
+    for r in keep[-n:]:
+        out = [l.strip() for l in r['out'].splitlines() if l.strip()]
+        key = [l for l in out if re.match(r'(RESULT:|RUN #|PROBE on|BLOCKCHECK|STOP:|CHECKPOINT|Design files restored|MODEL VALIDATION)', l) or 'recorded as' in l or re.match(r'\w+: (match|mismatch|fixed|nogolden)', l)]
+        rowline = next((l for l in out if 'MISMATCH' in l or l.endswith('match')), None)
+        print('  rtl ' + (r.get('line') or r['cmd'])[:600])
+        for l in (key[:2] + ([rowline] if rowline else []) + key[2:3]):
+            print('      -> ' + l[:240])
+
+
+def cmd_mark(args):
+    """Record the outcome of a comparison for one RTL signal."""
+    st = load()
+    ok = ('match', 'mismatch', 'fixed', 'nogolden')
+    if len(args) < 2 or args[1] not in ok:
+        die('Usage: rtl mark SIGNAL match|mismatch|fixed|nogolden "kind=control golden=REQUIRED observed=SEEN source=WHERE IT IS REQUIRED"   (control signals only; data values: rtl blockcheck)\n'
+            '  match    = probed; inputs and output agree with golden\n'
+            '  mismatch = probed; inputs agree with golden, output does not (this driver is the faulty circuit)\n'
+            '  fixed    = after your edit, the same comparison now agrees with golden\n'
+            '  nogolden = the validated model gives no golden value for this signal (then: rtl ask)')
+    sig, status = args[0], args[1]
+    if sig not in design_signals():
+        die(f'"{sig}" is not a signal of the design. See: rtl signals')
+    if status != 'nogolden' and sig not in st.get('probed', []) and not os.environ.get('RTL_NO_GATES'):
+        die(f'STOP: "{sig}" has not been probed since the last edit. A status is recorded only after a comparison: rtl probe {sig} ... first.')
+    note = ' '.join(args[2:])
+    if status != 'nogolden' and 'kind=control' not in note.lower().replace(' ', '') and not os.environ.get('RTL_NO_GATES'):
+        die('STOP: rtl mark records control signals only (state machines, counters, flags, handshakes), compared as a sequence with what the task or the '
+            'standard requires: add kind=control to the note, e.g. rtl mark ' + sig + ' mismatch "kind=control golden=REQUIRED SEQUENCE observed=SEQUENCE SEEN source=WHERE IT IS REQUIRED".\n'
+            'Data values are not marked by hand: rtl blockcheck --in INPUTS --out ' + sig + ' --model "COMMAND" compares them with the model and records the result.' + blocks_hint(st, full=True))
+    if status != 'nogolden' and not os.environ.get('RTL_NO_GATES'):
+        low = note.lower()
+        if not ('golden' in low and 'observed' in low and 'source' in low):
+            die('STOP: a comparison is recorded with its evidence. Give: "golden=VALUE observed=VALUE source=WHERE THE GOLDEN CAME FROM" '
+                '(which output of the validated model, for which inputs). If no golden value can be obtained: rtl mark ' + sig + ' nogolden "why", then rtl ask.')
+    elif status == 'nogolden' and len(note) < 10:
+        die('Say why no golden value can be obtained: rtl mark ' + sig + ' nogolden "why"')
+    prev = st.setdefault('marks', {}).get(sig, {})
+    if status == 'fixed' and prev.get('status') != 'mismatch':
+        die(f'"{sig}" was not marked mismatch before; "fixed" is for a driver that was located and then edited.')
+    st['marks'][sig] = {'status': status, 'note': ' '.join(args[2:]), 'run': len(st['runs']), 'attempts': prev.get('attempts', 0), 'ev': len(st.get('events', []))}
+    st.setdefault('events', []).append('mark_' + status); save(st)
+    print(f'{sig}: {status}.' + ('  Now run: rtl sim' if status == 'fixed' else '  Now: rtl ask "..."' if status == 'nogolden' else '') + '   (what to do next: rtl next)')
+
+
+def cmd_next(args):
+    """Report on the current work order and get the next one (work-order mode), or tell the next step by fixed rules."""
+    st = load(); rows = row_status(st)
+    runs = [x for x in st['runs'] if not x.get('probe')]
+    ev = st.get('events', [])
+    cnt = collections.Counter(rows.values())
+    head = (f'State: {n_edits()} edit(s) vs original; signals: ' + ', '.join(f'{cnt.get(k, 0)} {k}' for k in ('not_compared', 'match', 'mismatch', 'recheck', 'fixed', 'nogolden')) +
+            (f'; last testbench run #{runs[-1]["n"]}: {runs[-1]["result"]}' if runs else '; no testbench run yet') +
+            f'; task sheet {"approved" if st.get("sheet_approved") else "not approved"}; model {"validated" if st.get("model") else "not validated"}')
+    if os.environ.get('RTL_NEXT_AI') and not os.environ.get('RTL_NO_GATES'):
+        if os.path.exists(os.path.join(WORK, 'conv_done')):
+            die('STOP: this conversation is complete. Write your closing lines as the final message; no further command is run.')
+        report = ' '.join(args)
+        low = report.lower()
+        if not st.get('next_pending') and not all(w in low for w in ('found', 'evidence', 'unsure')):
+            die('Usage: rtl next "found: WHAT YOU FOUND / evidence: WHICH RUN, PROBE OR FILE SHOWS IT / unsure: WHAT YOU ARE NOT SURE ABOUT (or: nothing)"\n'
+                'Report on the current work order in these three parts; the orchestrator answers with the next work order.')
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            _rule_next(st, rows, runs, ev)
+        print(head)
+        advise(st, head, buf.getvalue().strip(), report)
+        return
+    print(head)
+    _rule_next(st, rows, runs, ev)
+
+
+def advise(st, head, rule_text, question):
+    """Ask the orchestrator (a senior engineer following the session) what to do next, and wait for the guidance."""
+    box = os.environ.get('RTL_ASK_DIR', os.path.join(ROOT, 'rundir', '.orchestrator'))
+    os.makedirs(box, exist_ok=True)
+    pend = st.get('next_pending')
+    k = pend if pend else st.get('next_asks', 0) + 1
+    req, ans = os.path.join(box, f'request_next_{k}.md'), os.path.join(box, f'answer_next_{k}.md')
+    if not pend:
+        st['next_asks'] = k; st['next_pending'] = k; save(st)
+        hist = []
+        hp = os.path.join(WORK, 'history.jsonl')
+        if os.path.exists(hp):
+            for line in open(hp, errors='replace').read().splitlines()[-10:]:
+                try:
+                    h = json.loads(line); hist.append('$ rtl ' + h['cmd'][:400] + '\n' + h['out'][:1200])
+                except Exception:
+                    pass
+        marks = '\n'.join(f'- {k_}: {v["status"]} (edits: {v.get("attempts", 0)}) {v.get("note", "")[:300]}' for k_, v in st.get('marks', {}).items()) or '(none)'
+        open(req, 'w').write(f'[work order report, request {k}]\n\n{head}\n\n## Report\n{question or "(nothing given)"}\n\n'
+                             f'## Recorded comparisons\n{marks}\n\n## Rule-based suggestion of the tool (for reference, not shown to the agent)\n{rule_text}\n\n'
+                             '## Last commands and their output\n' + '\n\n'.join(hist) + '\n')
+    limit = int(os.environ.get('RTL_NEXT_WAIT', '1800')); t0 = time.time()
+    print(f'Report {k} sent to the orchestrator. Waiting for the next work order (up to {limit // 60} min). If this command is cut off, run rtl next again: it resumes the same report.', flush=True)
+    while time.time() - t0 < limit:
+        if os.path.exists(ans):
+            time.sleep(1)
+            st = load(); st['next_pending'] = None; st['order_t'] = time.time(); st.setdefault('events', []).append('advice'); save(st)
+            text = open(ans).read().strip()
+            print(f'ORCHESTRATOR ANSWER {k}:\n' + text)
+            if text.upper().startswith('CONVERSATION COMPLETE'):
+                open(os.path.join(WORK, 'conv_done'), 'w').write(str(k))
+                print('-' * 60 + '\nThis conversation is complete. Write the closing lines the answer asks for as your final message. Do not run any further command.')
+            return
+        time.sleep(2)
+    print(f'No answer within {limit // 60} min. Do not go on by yourself: run rtl next again later (it resumes the same report), or stop here.')
+
+
+def _rule_next(st, rows, runs, ev):
+    """Next step by fixed rules (used when no orchestrator is configured; in work-order mode it is sent along for reference)."""
+    if os.environ.get('RTL_NO_GATES'):
+        print('(gates are off)')
+    else:
+        bad = order_problem(st)
+        if bad:
+            print('NEXT: ' + bad); return
+        why = must_ask(st)
+        if why:
+            print(f'NEXT: rtl ask "..."   ({why}). Report what you compared, what you found and what you need, and wait.'); return
+        if not runs:
+            print('NEXT: rtl sim   (run the testbench once on the untouched design and note what fails)'); return
+        if os.environ.get('RTL_SHEET_REVIEW') and not st.get('sheet_approved'):
+            print((f'NEXT: search {LIB} (INDEX.md); if it holds a model of the function, validate it now: rtl model DIR. Then write ' if not st.get('model') else 'NEXT: write ') +
+                  f'the task sheet {SHEET}, rtl sheetsubmit and wait for the orchestrator\'s review.'); return
+        why = model_ok(st)
+        if why:
+            print('NEXT: golden model: ' + why); return
+    last_edit = max([i for i, e in enumerate(ev) if e in ('replace', 'revert')], default=-1)
+    last_sim = max([i for i, e in enumerate(ev) if e == 'sim'], default=-1)
+    last_rep = max([i for i, e in enumerate(ev) if e == 'replace'], default=-1)
+    if last_rep >= 0 and ev[-1] != 'replace' and not any(e in ('mark_fixed', 'revert') for e in ev[last_rep + 1:]):
+        ck = st['ckpts'][-1]['id'] if st.get('ckpts') else 'CHECKPOINT'
+        print(f'NEXT: your last edit is not confirmed yet. Repeat the same comparison for the driver you edited. It now agrees -> it is recorded as fixed. '
+              f'It does not agree, or it cannot be checked because an earlier stage is still wrong -> rtl revert {ck}, and deal with that earlier stage first. '
+              'An edit that is not confirmed is not kept: there is no third choice.'); return
+    if ev and ev[-1] == 'replace':
+        print('NEXT: rtl sim, then repeat the same comparison for the driver you just edited (rtl probe ...). Model and RTL agree and the run is not worse -> recorded as fixed (blockcheck does it; a control signal: rtl mark SIGNAL fixed "kind=control ..."). Otherwise rtl revert.'); return
+    back = [k for k, v in rows.items() if v == 'recheck']
+    if back:
+        print(f'NEXT: the fix of {back[0]} was reverted. Go back one level: probe the stage upstream of its driver against the model again '
+              '(the golden value, or an input judged "match", may be wrong), then rtl mark what you find.'); return
+    located = [k for k, v in rows.items() if v == 'mismatch']
+    if len(located) > 1:
+        print('NEXT: ' + str(len(located)) + ' faulty drivers are recorded: ' + ', '.join(located) + '. Fix ONE, the earliest in the chain of cause: the one whose own inputs are '
+              'correct. If one of them is wrong only because another has not happened yet (it waits for it, is started by it, or reads it), fix that other one first; '
+              'a fix downstream of an unfixed fault cannot be confirmed. Then rtl sim and repeat the same comparison.'); return
+    if located:
+        print(f'NEXT: fix the driver of {located[0]} only (rtl show, rtl replace), then rtl sim and repeat the same comparison.'); return
+    if last_edit > last_sim:
+        print('NEXT: rtl sim   (a fix was kept or reverted since the last testbench run)'); return
+    if runs and runs[-1]['result'] == 'PASS':
+        print('NEXT: the testbench passes. Check the cases the task names but the testbench does not exercise (rtl sim --tb FILE), then report.'); return
+    rest = [k for k, v in rows.items() if v == 'not_compared']
+    if rest:
+        print('NEXT: choose the block to compare: start at the failing output and go back toward the inputs, one block at a time (probe-signal skill). '
+              'rtl blockcheck --in INPUTS --out OUTPUT --model "COMMAND" feeds the probed inputs to the model and records match / mismatch. '
+              'Control signals (state machines, counters, done flags): compare their sequence by rtl probe, then rtl mark SIGNAL match|mismatch "kind=control ...".')
+        print(f'      {len(rest)} signal(s) not compared yet: ' + ', '.join(rest[:10]) + (' ...' if len(rest) > 10 else '')); return
+    print('NEXT: every signal has been compared and the testbench still fails. Narrow down from the failing output with the probe-signal skill; '
+          'if it points to logic the RTL does not have, rtl ask "..." and wait.')
+
+
+PROBES_WITHOUT_MARK = int(os.environ.get('RTL_PROBES_WITHOUT_MARK', '3'))
+
+
+def probes_since(st):
+    """Probe runs since the last recorded comparison, edit, revert or answer."""
+    since = 0
+    for e in reversed(st.get('events', [])):
+        if e.startswith('mark_') or e in ('replace', 'revert', 'ask', 'model'):
+            break
+        since += e == 'probe'
+    return since
+
+
+def must_ask(st):
+    """Reason why the next step has to be `rtl ask` (None when it does not). These are the points where
+    the probing method has not got there and the agent must report instead of finding another way."""
+    if st.get('ask_needed'):
+        return st['ask_needed']
+    marks = st.get('marks', {})
+    for k, v in marks.items():
+        if v['status'] == 'nogolden':
+            return f'no golden value could be obtained for {k}'
+        if v['status'] == 'recheck' and v.get('attempts', 0) >= 2:
+            return f'the driver of {k} was edited {v["attempts"]} times and reverted each time'
+    ev = st.get('events', [])
+    runs = [x for x in st.get('runs', []) if not x.get('probe')]
+    if st.get('model') and runs and runs[-1]['result'] != 'PASS':
+        rows = row_status(st)
+        last_edit = max([i for i, e in enumerate(ev) if e in ('replace', 'revert')], default=-1)
+        last_sim = max([i for i, e in enumerate(ev) if e == 'sim'], default=-1)
+        if rows and all(v in ('match', 'fixed') for v in rows.values()) and last_sim > last_edit:
+            return 'every signal has been compared and the testbench still fails'
+    return None
+
+
+def program_files(base_dirs=None):
+    """Program files written during the session outside the model work folder."""
+    found = []
+    for base in (base_dirs or ('/tmp', ROOT)):
+        for dp, dn, fn in os.walk(base):
+            if dp.startswith(WORK) or (not base_dirs and dp.startswith(MODEL_WORK)) or '/.orchestrator' in dp or '/node_modules' in dp or '/qwen-home' in dp or '/.cache' in dp:
+                continue
+            for f in fn:
+                if f.endswith(('.py', '.c', '.cc', '.cpp', '.pl', '.js', '.rb', '.go', '.rs', '.java')):
+                    found.append(os.path.join(dp, f))
+    return sorted(found)
+
+
+def order_problem(st):
+    """Work done out of order or outside the method: a program outside the model folder, or a model before the task sheet."""
+    progs = program_files()
+    if progs:
+        return ('STOP: program files were written outside the model folder: ' + ', '.join(progs[:6]) + ('.' if len(progs) <= 6 else ' ...') +
+                f' A model is built only in {MODEL_WORK}/NAME, after the task sheet is approved, and is used only after rtl model has validated it. '
+                'Move them there or delete them, or explain with: rtl ask "..."')
+    if os.environ.get('RTL_SHEET_REVIEW') and not st.get('sheet_approved') and os.path.isdir(MODEL_WORK) and any(fn for dp, dn, fn in os.walk(MODEL_WORK)):
+        return (f'STOP: out of order: {MODEL_WORK} holds files but the task sheet has not been approved. The task sheet comes before the golden model: '
+                'write it and run rtl sheetsubmit. (A model of the library may be validated before the task sheet; one you build comes after it.)')
+    return None
+
+
+def gate(cmd, args=()):
+    """Order of work: one baseline run, the task sheet, the validated golden model, then probing and editing."""
+    if os.environ.get('RTL_NO_GATES'):
+        return
+    if os.path.exists(os.path.join(WORK, 'conv_done')):
+        die('STOP: this conversation is complete. Write your closing lines as the final message; no further command is run.')
+    st = json.load(open(STATE)) if os.path.exists(STATE) else {}
+    bad = order_problem(st)
+    if bad and cmd not in ('status', 'show', 'diff', 'log'):
+        die(bad)
+    if st and cmd == 'probe' and not os.environ.get('RTL_NEXT_AI') and probes_since(st) >= PROBES_WITHOUT_MARK:
+        die(f'STOP: {probes_since(st)} probe runs without a recorded comparison. Record what they showed before probing again: data values -> rtl blockcheck '
+            '(the tool compares with the model and records it); a control sequence -> rtl mark SIGNAL match|mismatch "kind=control ..."; '
+            'if neither is possible -> rtl ask "...".' + blocks_hint(st, full=True))
+    why = must_ask(st) if st else None
+    if why and cmd in ('probe', 'replace', 'insert', 'mark', 'sim'):
+        die(f'STOP: {why}. The method has not got there: do not look for another way. Report to the orchestrator now with rtl ask "what you compared, what you found, what you need" and wait for the answer.')
+    if st.get('hash') and st['hash'] != design_hash() and cmd not in ('revert', 'diff', 'status', 'show'):
+        die('STOP: the design files in rtl/ were changed without `rtl replace`. Edits must go through `rtl replace` so that each one has a '
+            'checkpoint and a comparison. Undo the outside change with: rtl revert last')
+    # before the task sheet: reading, one run of the testbench on the untouched design, and validating a model of the library
+    lib_model = cmd == 'model' and len(args) == 1 and os.path.realpath(args[0]).startswith(os.path.realpath(LIB) + os.sep)
+    if cmd in ('show', 'signals', 'log', 'status', 'diff') or lib_model or (cmd == 'sim' and not [x for x in st.get('runs', []) if not x.get('probe')]):
+        return
+    if not os.path.exists(SHEET):
+        die(f'STOP: {SHEET} does not exist. Classify the task and write the task sheet first (see the kick-off instructions); then run this command again.')
+    text = open(SHEET, errors='replace').read().lower()
+    missing = [i for i in SHEET_ITEMS if i not in text]
+    if missing:
+        die(f'STOP: the task sheet {SHEET} is incomplete. Missing items (headings containing): ' + ', '.join(missing) + '. Complete it, then run this command again.')
+    # an item must have content of its own: no placeholders, and some text before the next heading
+    raw = open(SHEET, errors='replace').read()
+    parts = re.split(r'(?m)^#+\s*(.+)$', raw)
+    unfilled = []
+    for k in range(1, len(parts) - 1, 2):
+        head, body = parts[k].strip(), parts[k + 1].strip()
+        if head.lower().startswith('task sheet'):  # the document title, not an item
+            continue
+        if any(i in head.lower() for i in SHEET_ITEMS):
+            if len(body) < 15 or re.search(r'\b(tbd|to be filled|to be done|to be determined|fill in later|later)\b', (head + ' ' + body).lower()):
+                unfilled.append(head[:50])
+    if unfilled:
+        die(f'STOP: these task sheet items are not filled in yet: ' + '; '.join(unfilled) + '. Read what is needed (for testbench items: the testbench) and write them now; "to be done" is not accepted.')
+    if os.environ.get('RTL_SHEET_REVIEW') and not os.environ.get('RTL_SKIP_SHEET_REVIEW'):
+        cur = hashlib.sha1(open(SHEET, 'rb').read()).hexdigest()
+        if not st.get('sheet_approved') or st.get('sheet_hash') != cur:
+            die('STOP: the task sheet has not been approved by the orchestrator' + (' since it was last changed' if st.get('sheet_approved') else '') +
+                '. Submit it for review with: rtl sheetsubmit   (it waits for the answer)')
+    if cmd in ('replace', 'insert', 'mark', 'blockcheck'):
+        why = model_ok(st)
+        if why:
+            die('STOP: ' + why)
+
+
+HELP = """rtl - simulator and file operations for RTL work
+  rtl sim [--until T]           compile + run the testbench, shows PASS/FAIL (stops at time T if it has not finished)
+  rtl signals [WORD]            list signal names and widths (WORD = part of a signal, module or instance name)
+  rtl probe SIG [SIG ...]       print the listed signals at every clock edge ("a+b+c" joins signals into one value) (--from T --to T --when "cond" --max N; the simulation stops at --to)
+  rtl show FILE [A B]           show lines A..B with line numbers
+  rtl replace FILE A B          replace lines A..B with the text given on stdin (saves a checkpoint first)
+  rtl insert FILE N             insert the text given on stdin after line N
+  rtl checkpoint [NOTE]         save the current design files
+  rtl revert CHECKPOINT         restore a checkpoint ("original" = the untouched files)
+  rtl diff [CHECKPOINT]         what has changed vs the original (or vs a checkpoint)
+  rtl status                    summary of edits, runs and time used
+  rtl log N [--full]            output of run N (--full = unfiltered)
+  rtl history [N] [WORD]        earlier commands and their results, also from earlier conversations (WORD = part of the command)
+  rtl ask "MESSAGE"             notify the orchestrator and wait for instructions
+  rtl sheetsubmit               submit the task sheet to the orchestrator for review and wait
+  rtl model DIR                 run the validation of a golden model and record it (needed before comparing and editing)
+  rtl blockcheck --in SIG.. --out SIG --model "CMD"   feed the probed inputs of a block to the model, compare its output, record the result
+  rtl mark SIGNAL STATUS "golden=.. observed=.. source=.."   record a comparison: match | mismatch | fixed | nogolden
+  rtl next "found: .. / evidence: .. / unsure: .."   report on the current work order; the orchestrator answers with the next one"""
+
+if __name__ == '__main__':
+    a = sys.argv[1:]
+    table = {'sim': cmd_sim, 'signals': cmd_signals, 'probe': cmd_probe, 'show': cmd_show, 'replace': cmd_replace, 'insert': cmd_insert,
+             'checkpoint': cmd_checkpoint, 'revert': cmd_revert, 'diff': cmd_diff, 'status': cmd_status, 'log': cmd_log, 'ask': cmd_ask, 'model': cmd_model, 'blockcheck': cmd_blockcheck, 'history': cmd_history, 'mark': cmd_mark, 'next': cmd_next, 'sheetsubmit': cmd_sheetsubmit}
+    if not a or a[0] not in table:
+        print(HELP); sys.exit(0 if not a or a[0] in ('help', '-h', '--help') else 1)
+    # a note the orchestrator left for the agent is delivered with the next command, whatever it is
+    _box = os.environ.get('RTL_ASK_DIR', os.path.join(ROOT, 'rundir', '.orchestrator'))
+    _note = os.path.join(_box, 'note.md')
+    if os.path.exists(_note):
+        _n = len([f for f in os.listdir(_box) if f.startswith('note_delivered_')]) + 1
+        print('ORCHESTRATOR NOTE (read this first):\n' + open(_note, errors='replace').read().strip() + '\n' + '-' * 60, flush=True)
+        os.rename(_note, os.path.join(_box, f'note_delivered_{_n}.md'))
+    # keep a short history of commands and their output: it is what the orchestrator sees when asked for guidance
+    import atexit, io
+    class _Tee(io.TextIOBase):
+        def __init__(self, real): self.real, self.buf = real, []
+        def write(self, x):
+            self.buf.append(x)
+            try:
+                return self.real.write(x)
+            except BrokenPipeError:
+                return len(x)
+        def flush(self):
+            try:
+                self.real.flush()
+            except BrokenPipeError:
+                pass
+    _tee = _Tee(sys.stdout); sys.stdout = _tee
+    def _keep():
+        try:   # tell how much of the work order's time is used: the agent has no clock of its own
+            lim = int(os.environ.get('RTL_ORDER_LIMIT_S', '0'))
+            if lim and a[0] not in ('next', 'ask', 'sheetsubmit') and os.path.exists(STATE):
+                t0_ = json.load(open(STATE)).get('order_t')
+                if t0_:
+                    used = time.time() - t0_
+                    msg = f'[work order: {used / 60:.0f} min used of {lim / 60:.0f}]'
+                    if used > 0.6 * lim:
+                        msg += ' Time is nearly up: report now what you have with rtl next "found / evidence / unsure". An incomplete report is better than none.'
+                    _tee.real.write(msg + '\n'); _tee.real.flush()
+        except Exception:
+            pass
+        try:
+            os.makedirs(WORK, exist_ok=True)
+            open(os.path.join(WORK, 'history.jsonl'), 'a').write(json.dumps({'t': time.time(), 'cmd': ' '.join(a), 'line': __import__('shlex').join(a), 'out': ''.join(_tee.buf)[:3000]}) + '\n')
+        except Exception:
+            pass
+    atexit.register(_keep)
+    if a[0] not in ('ask', 'next', 'sheetsubmit', 'history'):
+        gate(a[0], a[1:])
+    table[a[0]](a[1:])

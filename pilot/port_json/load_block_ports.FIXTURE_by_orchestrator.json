@@ -1,0 +1,55 @@
+{
+ "block": "load_block",
+ "inputs": [
+  {
+   "arch_port": "i_data",
+   "arch_connected_to": "design port.i_data",
+   "rtl": {
+    "signal": "i_data",
+    "width": 128,
+    "kind": "data",
+    "valid_when": "i_start & o_done",
+    "clock": "none",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "source": "rtl line 10, 86",
+    "unknown": []
+   }
+  }
+ ],
+ "outputs": [
+  {
+   "arch_port": "state_in",
+   "arch_connected_to": "state_reg.state_in",
+   "rtl": {
+    "signal": "current_data_nx[0][0]+...",
+    "width": 128,
+    "kind": "data",
+    "valid_when": "i_start & o_done",
+    "clock": "none",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "source": "rtl line 24, 86-87",
+    "unknown": []
+   }
+  }
+ ],
+ "rtl_extra_ports": [
+  {
+   "signal": "i_start",
+   "width": 1,
+   "kind": "level",
+   "source": "rtl line 9"
+  },
+  {
+   "signal": "o_done",
+   "width": 1,
+   "kind": "level",
+   "source": "rtl line 44"
+  }
+ ]
+}

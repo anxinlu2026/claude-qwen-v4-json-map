@@ -1,0 +1,31 @@
+{
+ "problems": [
+  "cvdp_agentic_AES_encryption_decryption_0005"
+ ],
+ "label": "qwen8-qc",
+ "run_id": "orders-cvdp_agentic_AES_encryption_decryption_0005-qwen8-qc-walk6-20261016",
+ "mode": "work orders",
+ "work_orders": {
+  "container": "orders_walk6",
+  "source_run": "seed_run",
+  "kickoff_file": "/Users/anxin/AI/benchmarks/multi-ai/claude/cvdp_aes0005_multi_ai/snapshot_walk5_rerun/kickoff/hdl_debug_agent_v18.txt",
+  "order_timeout_s": 480,
+  "temperature": 0.6,
+  "sessions": [
+   {
+    "started": "2026-10-16T22:23:49+08:00",
+    "image": "multi-ai/cvdp-qwen-agent:0.25.0-snap-walk5",
+    "kickoff_file": "/Users/anxin/AI/benchmarks/multi-ai/claude/cvdp_aes0005_multi_ai/snapshot_walk5_rerun/kickoff/hdl_debug_agent_v18.txt",
+    "model": "qwen3.8:27b-mxfp8",
+    "temperature": 0.6,
+    "presence_penalty": 0.5,
+    "frequency_penalty": 0.5,
+    "repeat_penalty": 1.1,
+    "reasoning_effort": "none"
+   }
+  ],
+  "dev_mount": false
+ },
+ "note": "tuning run: the orchestrator plans every work order; not comparable with baselines",
+ "agent_image": "multi-ai/cvdp-qwen-agent:0.25.0-snap-walk5"
+}

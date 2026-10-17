@@ -1,0 +1,42 @@
+{
+ "block": "load_block",
+ "inputs": [
+  {
+   "arch_port": "i_data",
+   "arch_connected_to": "design port.i_data",
+   "rtl": {
+    "signal": "TODO",
+    "width": "TODO",
+    "kind": "TODO",
+    "valid_when": "TODO",
+    "clock": "TODO",
+    "edge": "TODO",
+    "storage": "TODO",
+    "latency_min_cycles": "TODO",
+    "latency_max_cycles": "TODO",
+    "source": "TODO",
+    "unknown": []
+   }
+  }
+ ],
+ "outputs": [
+  {
+   "arch_port": "state_in",
+   "arch_connected_to": "state_reg.state_in",
+   "rtl": {
+    "signal": "TODO",
+    "width": "TODO",
+    "kind": "TODO",
+    "valid_when": "TODO",
+    "clock": "TODO",
+    "edge": "TODO",
+    "storage": "TODO",
+    "latency_min_cycles": "TODO",
+    "latency_max_cycles": "TODO",
+    "source": "TODO",
+    "unknown": []
+   }
+  }
+ ],
+ "rtl_extra_ports": []
+}

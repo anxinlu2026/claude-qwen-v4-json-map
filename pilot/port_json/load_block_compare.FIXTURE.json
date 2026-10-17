@@ -1,0 +1,63 @@
+{
+ "block": "load_block",
+ "ports": [
+  {
+   "side": "inputs",
+   "arch_port": "i_data",
+   "rtl_signal": "i_data",
+   "different": {
+    "valid_when": {
+     "architecture": "i_start",
+     "rtl": "i_start & o_done"
+    }
+   },
+   "unknown": [],
+   "same_attributes": [
+    "width",
+    "kind",
+    "clock",
+    "edge",
+    "storage",
+    "latency_min_cycles",
+    "latency_max_cycles"
+   ]
+  },
+  {
+   "side": "outputs",
+   "arch_port": "state_in",
+   "rtl_signal": "current_data_nx[0][0]+...",
+   "different": {
+    "valid_when": {
+     "architecture": "i_start",
+     "rtl": "i_start & o_done"
+    }
+   },
+   "unknown": [],
+   "same_attributes": [
+    "width",
+    "kind",
+    "clock",
+    "edge",
+    "storage",
+    "latency_min_cycles",
+    "latency_max_cycles"
+   ]
+  }
+ ],
+ "missing_in_rtl": [],
+ "rtl_extra_ports": [
+  {
+   "signal": "i_start",
+   "width": 1,
+   "kind": "level",
+   "source": "rtl line 9"
+  },
+  {
+   "signal": "o_done",
+   "width": 1,
+   "kind": "level",
+   "source": "rtl line 44"
+  }
+ ],
+ "todo": []
+}

@@ -1,0 +1,192 @@
+[
+ {
+  "id": "AA1",
+  "subject": "key expansion length",
+  "value": "10 clocks, one round key per clock (key_cnt 1..10), the first in the row after the start row",
+  "reason": "Spec only says the expansion runs serially before decryption; a serial design with one 4-word step per clock gives 10 steps. Spec does not give a count.",
+  "check": {
+   "signal": "key step counter / round_key_store writes",
+   "rows": "update case rows 1..10; first decrypt step in row 11"
+  }
+ },
+ {
+  "id": "AA2",
+  "subject": "initial AddRoundKey",
+  "value": "a separate clock (round_cnt = 1) with rk[10]; no InvShiftRows/InvSubBytes in it",
+  "reason": "Spec lists it as its own step ('Initial step'); one clock per step is the simplest serial reading.",
+  "check": {
+   "signal": "state register after first decrypt clock",
+   "rows": "update row 12 / no-update row 2 equals ct ^ rk[10]"
+  }
+ },
+ {
+  "id": "AA3",
+  "subject": "one clock per decryption round, total latency",
+  "value": "rounds 1..9 and the final round take one clock each; o_done row = 22 (update) / 12 (no update), counted from the start row = 0",
+  "reason": "Not fixed by the spec; the TB/cocotb accept any latency (wait for o_done). Chosen as the minimum for a registered, serial design.",
+  "check": {
+   "signal": "o_done",
+   "rows": "row 22 (update), row 12 (no update); compare the round counter row by row"
+  }
+ },
+ {
+  "id": "AA4",
+  "subject": "o_done shape",
+  "value": "registered one-cycle pulse; 0 in the row after the start row; 0 again in the row after it",
+  "reason": "TB waits for a rising edge of o_done, and cocotb stops at the first sampled 1; a stale 1 would break both. A held-until-next-start o_done would also pass if cleared by the start edge; pulse chosen.",
+  "check": {
+   "signal": "o_done",
+   "rows": "rows 1 and done+1 are 0; exactly one row is 1"
+  }
+ },
+ {
+  "id": "AA5",
+  "subject": "o_data when o_done = 0",
+  "value": "o_data is the state register directly (no separate output register); intermediate values are visible while busy; 0 after reset",
+  "reason": "Spec fixes only o_data when o_done = 1 and (cocotb) after reset, where the library model starts with decrypted_data presumably 0 (the library harness_library is not visible; assumed 0).",
+  "check": {
+   "signal": "o_data",
+   "rows": "row after reset = 0; row with o_done = 1 = plaintext; other rows free"
+  }
+ },
+ {
+  "id": "AA6",
+  "subject": "reset values",
+  "value": "all registers 0: key_cnt, round_cnt, o_done, key_done, state, stored round keys; reset also forgets the stored key",
+  "reason": "cocotb resets 4 times and always starts the first run with update_key = 1, so the stored key after reset is never used; the spec says nothing else.",
+  "check": {
+   "signal": "all registers",
+   "rows": "row after rst_async_n goes high"
+  }
+ },
+ {
+  "id": "AA7",
+  "subject": "start while busy / in the done row",
+  "value": "start while key_cnt != 0 or round_cnt != 0 is ignored; start in the o_done row is accepted (idle then)",
+  "reason": "Not stated. cocotb starts the next run in the row after o_done has been seen; TB starts at least one row later. Neither starts while busy.",
+  "check": {
+   "signal": "i_start",
+   "rows": "not exercised by TB/cocotb; only check the design does not restart a running operation if this is tested"
+  }
+ },
+ {
+  "id": "AA8",
+  "subject": "capture of i_data and i_key",
+  "value": "both captured at the start edge (i_data into state_reg, i_key into rk[0] when i_update_key = 1)",
+  "reason": "TB and cocotb set both to 0 in the row after start, so the design must have stored them.",
+  "check": {
+   "signal": "state_reg, rk[0]",
+   "rows": "row 1 equals the ciphertext (state) and the key (rk[0], update case)"
+  }
+ },
+ {
+  "id": "AA9",
+  "subject": "start without update right after reset",
+  "value": "not defined; model uses rk = 0 (key 0 not expanded)",
+  "reason": "Spec silent; never exercised (first run after every reset is update = 1).",
+  "check": {
+   "signal": "-",
+   "rows": "not checked"
+  }
+ },
+ {
+  "id": "AA10",
+  "subject": "i_update_key sampling",
+  "value": "looked at only in the start row (start_with_update vs start_without_update); never remembered beyond that except through key_cnt/round_cnt",
+  "reason": "TB and cocotb clear it in the row after start, as the task text's own prompt lists it as the start modifier ('asserted by i_update_key and i_start').",
+  "check": {
+   "signal": "i_update_key and the signal that selects key expansion",
+   "rows": "update case rows 1..10 (i_update_key = 0 there, expansion must still run)"
+  }
+ },
+ {
+  "id": "AA11",
+  "subject": "round key order in decryption",
+  "value": "initial AddRoundKey rk[10]; rounds 1..9 rk[9]..rk[1]; final round rk[0]",
+  "reason": "Not written in the task text; follows FIPS 197 (inverse cipher) and the expected value of the TB vector.",
+  "check": {
+   "signal": "round key select",
+   "rows": "update rows 11..21 / no-update rows 1..11: keys 10,9,...,0"
+  }
+ },
+ {
+  "id": "AA12",
+  "subject": "key_done as an internal signal",
+  "value": "key_done = 0 from reset and from the start edge of an update; 1 from the end of key step 10; stays 1 later",
+  "reason": "The name and meaning are the architect's; the spec only requires 'expand first, then decrypt'. An RTL may encode this differently (for example a counter only).",
+  "check": {
+   "signal": "key-expansion-done flag or its equivalent",
+   "rows": "update row 11 first 1; no-update case 1 in all rows"
+  }
+ },
+ {
+  "id": "AA13",
+  "subject": "stored key form",
+  "value": "all 11 round keys are kept; a no-update run does not re-expand",
+  "reason": "Task text: 'the stored expanded key'. If the RTL stored only the cipher key and re-expanded each time, the no-update latency would be 22, not 12.",
+  "check": {
+   "signal": "expanded key store",
+   "rows": "no-update case: no key_cnt activity in rows 1..11"
+  }
+ },
+ {
+  "id": "AA14",
+  "subject": "byte order of i_key and i_data/o_data",
+  "value": "byte 0 = most significant byte, row n%4, column n//4",
+  "reason": "Fixed by the TB comment for i_data and by the TB vectors for the key and output (expected plaintext 3243f6a8... is the FIPS vector); listed so the RTL map can confirm it.",
+  "check": {
+   "signal": "load of state_reg and of rk[0]",
+   "rows": "row 1"
+  }
+ },
+ {
+  "id": "AA15",
+  "subject": "internal control signals upd_load, start_accept, key_cnt, round_cnt",
+  "value": "named and split as in model.json (upd_load = idle & i_start & i_update_key; start_accept = idle & i_start)",
+  "reason": "Spec has no internal signals; an RTL may merge them in one FSM, use other encodings or one-hot state. The HDL map may mark a block as 'merged' if the function is the same.",
+  "check": {
+   "signal": "FSM state / counters",
+   "rows": "compare values per row with the schedule, not names"
+  }
+ },
+ {
+  "id": "AA16",
+  "subject": "add_round_key input mux",
+  "value": "add_round_key.state comes from state_reg.q at round_cnt = 1 and from inv_sub_bytes.state_out at round_cnt = 2..11; the mux is counted with round_mux",
+  "reason": "The initial AddRoundKey skips InvShiftRows/InvSubBytes. An RTL may instead apply those and bypass them with a mux, or add a separate initial XOR; the function per row is what counts.",
+  "check": {
+   "signal": "input of the XOR with the round key",
+   "rows": "first decrypt row: equals state_reg (ciphertext)"
+  }
+ },
+ {
+  "id": "AA17",
+  "subject": "round key store read for the key step",
+  "value": "rk_prev = rk[key_cnt-1] is a combinational read of the registered store; the new key is written at the end of the same row",
+  "reason": "Serial one-key-per-clock schedule (AA1). An RTL may keep only the last round key in a working register and the finished keys in the array.",
+  "check": {
+   "signal": "round key register(s)",
+   "rows": "update rows 1..10 each hold the next round key one row later"
+  }
+ },
+ {
+  "id": "AA18",
+  "subject": "latency numbers in ports_detail",
+  "value": "combinational ports 0 cycles, registered ports 1 cycle; cumulative rows per case in schedule",
+  "reason": "Consequence of AA1-AA4; any other register placement changes the numbers.",
+  "check": {
+   "signal": "all ports",
+   "rows": "per schedule"
+  }
+ },
+ {
+  "id": "AA19",
+  "subject": "model_cli argument encodings",
+  "value": "rk_all = rk[0]||...||rk[10] (rk[0] most significant, 352 hex digits); counters as hex numbers; round_mux CLI only selects a path",
+  "reason": "Needed for rtl blockcheck; the RTL array may use another index order, then the HDL engineer must map it (and say so).",
+  "check": {
+   "signal": "expanded key array",
+   "rows": "any row with key_done = 1"
+  }
+ }
+]
