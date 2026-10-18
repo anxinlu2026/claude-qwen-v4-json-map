@@ -52,3 +52,21 @@ HDL：使用者開的獨立 session「JSON map flow v2」（使用者說明是 C
 1. 架構做收尾審查（v2）：核對 rtl_changes 與 rtl diff、判斷 blk1/2/8/13 的 aligned 是否成立。
 2. 用 Qwen 當 HDL 重跑同一流程，分離流程與模型的影響。
 3. 決定是否放寬 rtl 的「一次只改一處、還原次數」關卡。
+
+## 追問統計（orchestrator 從檔案與工具記錄整理；分類是 orchestrator 對檔案的解讀）
+### 輪次與介面
+- HDL 兩輪（v0、v1）；架構三次（v0 由模型產生、v1 審查、v2 收尾審查）。沒有 HDL 的 v2；v2 之後沒有正式重新對齊。編輯過的方塊在第 1 輪內由方塊 harness 重新驗證（例：blk3 2/26→39/39、blk10 0/23→20/20、blk12 0/32→32/32）。
+- 15 個方塊的 ports 在 v0→v1→v2 全部沒有改（沒有把介面往外或往內重新切）；v1 只加 elements（暫存器層級）。有切點或對應問題的四個方塊（blk1 切點平移、blk2 對應到整個 expanded_key、blk8 無獨立訊號、blk13 無三選一多工）採「對應表或不採用」處理，沒有重切。
+### 誰先發現（11 個修改項、10 個位置）
+- HDL 在 v0（未改 RTL、架構尚未回饋）就提出 8 項：載入轉置、round_ff 待機自走、key_done bit10 不會為 1、step_key 字序、金鑰位元組序、ShiftRows 方向、MixColumns 係數、round 1 多了 InvMixColumns。
+- HDL 在 v1 自己找到 3 項：key 等待期間資料暫存器被覆寫、xtimes 歸約看錯級、MixColumns 在迴圈內讀到尚未賦值的元素（後兩項用 blockcheck 的 xor 型態找到，架構自述沒預期到）。
+- 架構首次提出：0 項。架構的貢獻：以原始列確認（blk3/7 字 0/2 互換、blk10 方向）、以規格與 testbench 裁決 model_kept、指出 start 未被接受是最上游症狀。
+### 工具使用（HDL 期間 344 筆 rtl 呼叫；已排除約 6 筆 orchestrator 的呼叫）
+| 指令 | 次數 | 備註 |
+|---|---|---|
+| blockcheck | 213 | 含方塊 harness 腳本自動呼叫的；第 0 輪 170、第 1 輪 43 |
+| probe | 43 | |
+| replace | 26 | 13 次成功、13 次被工具關卡 STOP |
+| show / mark / sim / signals / status / diff / revert / ask / next / history | 19 / 11 / 9 / 6 / 5 / 5 / 3 / 2 / 1 / 1 | |
+- 除錯主要靠方塊層級比對（blockcheck 約占 62%）；rtl sim 只有 9 次，多用於修改後確認 testbench；第一次成功修改 18:49，testbench 通過 19:01（12 分鐘後）。
+- 技能與流程腳本（block_harness、validate_json、rtl_regression）的使用次數沒有被記錄，unknown；只能從輸出檔推得 tool-blk*-check 各 14 份（v0、v1）與 tool-top-regression-v1 一份。
