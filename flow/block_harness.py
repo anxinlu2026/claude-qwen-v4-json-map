@@ -43,6 +43,32 @@ for line in text.splitlines():
         rows.append({"t": int(c[0]), "inputs": c[1:1 + len(sigs)], "rtl_out": c[1 + len(sigs)], "model_out": c[2 + len(sigs)], "result": c[-1]})
 ok = sum(1 for r in rows if r['result'] == 'match'); bad = sum(1 for r in rows if r['result'].startswith('MISMATCH'))
 res["function_check"] = {"command": ' '.join(cmd), "rows": len(rows), "match": ok, "mismatch": bad, "raw": text[-3500:]}
+# fallback for blocks without a model_cli entry (state / selection blocks): compare by VALUE with the harness steps
+if len(rows) == 0:
+    pc = ['rtl', 'probe'] + sigs + [outsig, '--max', '40'] + (['--when', when] if when else [])
+    pt = subprocess.run(pc, capture_output=True, text=True); ptext = pt.stdout + pt.stderr; prow = []
+    for line in ptext.splitlines():
+        c = [x.strip() for x in line.split('|')]
+        if len(c) >= len(sigs) + 2 and c[0].isdigit(): prow.append({"t": int(c[0]), "inputs": c[1:1 + len(sigs)], "rtl_out": c[1 + len(sigs)]})
+    def numv(x):
+        try: return int(str(x).lower().replace('0x', ''), 16)
+        except ValueError: return None
+    vm = vb = vn = 0; vrows = []
+    for r in prow:
+        hit = None
+        for s_ in HA['steps']:
+            want = [s_['inputs'].get(nm) for nm in order]
+            if all(w in (None, 'n/a') or (numv(w) is not None and numv(w) == numv(g)) for w, g in zip(want, r['inputs'])): hit = s_; break
+        outn = list(hit['outputs'].values())[0] if hit else None
+        if hit is None: vn += 1; r['result'] = 'no harness step has these inputs'
+        elif numv(outn) == numv(r['rtl_out']): vm += 1; r['result'] = 'match'
+        else: vb += 1; r['result'] = 'MISMATCH'; r['harness_out'] = outn
+        vrows.append(r)
+    rows = [{"t": r['t'], "inputs": r['inputs'], "rtl_out": r['rtl_out'], "model_out": r.get('harness_out', r['rtl_out'] if r['result'] == 'match' else ''), "result": r['result']} for r in vrows]
+    ok, bad = vm, vb
+    res["function_check"] = {"command": " ".join(pc), "rows": len(rows), "match": ok, "mismatch": bad, "raw": ptext[-3500:]}
+    res["function_check_mode"] = "harness-values (no model_cli entry for this block): RTL row inputs matched to a harness step by value; rows with no such step: %d" % vn
+    text = ptext
 # per-byte difference summary for the first mismatching rows (helps the architect see the pattern; no interpretation)
 diffs = []
 for r in rows:
@@ -63,6 +89,7 @@ for s_ in steps:
         if all(w in (None, 'n/a') or (num(w) is not None and num(w) == num(g)) for w, g in zip(want, got)): found = True; pos = j + 1; break
     if found: hit += 1
     elif first_bad is None: first_bad = {"step": s_['step'], "wanted": dict(zip(order, want))}
+res["mismatch_rows_compact"] = [{"t": r["t"], "rtl_out": r["rtl_out"], "model_out": r["model_out"]} for r in rows if r["result"].startswith("MISMATCH")][:8]
 res["input_check"] = {"steps": len(steps), "steps_whose_inputs_were_seen_in_order": hit, "not_seen": len(steps) - hit, "first_step_not_seen": first_bad}
 json.dump(res, open(os.path.join(ex, f'tool-blk{n}-check-v{K}.json'), 'w'), ensure_ascii=False, indent=1)
 if not opts.get('--no-write'):
