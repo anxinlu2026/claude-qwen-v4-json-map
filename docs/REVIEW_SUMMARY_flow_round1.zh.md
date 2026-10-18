@@ -77,7 +77,7 @@ HDL 期間 344 筆 `rtl` 呼叫（已排除約 6 筆 orchestrator 的）：
 | 技能與工具一致性檢查 | 啟動時檢查技能文件引用的指令是否存在 | 技能引用不存在的指令 |
 
 ### 6.3 我會怎麼做（確認後）
-**進度（2026-10-18）**：1、2 已完成並套用；agent.md 與技能統一用繁體。套用位置：舊 repo `01_plan/muti-agent-v2/{orchestrator,architecture,hdl}/agent.md`（只新增 42 行，沒改既有內容）與 `04_skills/{unit-alignment,change-review}/`（舊 repo commit `7c1a49e`），再同步到新 repo `roles/`、`skills/` 與工作副本 `multi-ai/skills/`。通用性檢查 0 個問題（`docs/drafts/check_general.py`）。`rtl assumption`（技能文件 13 處引用，`flow/check_skill_commands.py` 偵測）已依使用者決定補進工具（移植自較新的工具版本，只加 `ledger_text`、`carry_over`、`cmd_assumption` 與接線），映像重建，實測 add、add --fact、set（無證據拒絕、有證據通過）、list 都正常；檢查工具現為 0 個問題，並加入 `scripts/verify.sh`。尚未處理：6.2 的其餘工具項目。
+**進度（2026-10-18）**：1、2 已完成並套用；agent.md 與技能統一用繁體。套用位置：舊 repo `01_plan/muti-agent-v2/{orchestrator,architecture,hdl}/agent.md`（只新增 42 行，沒改既有內容）與 `04_skills/{unit-alignment,change-review}/`（舊 repo commit `7c1a49e`），再同步到新 repo `roles/`、`skills/` 與工作副本 `multi-ai/skills/`。通用性檢查 0 個問題（`docs/drafts/check_general.py`）。`rtl assumption`（技能文件 13 處引用，`flow/check_skill_commands.py` 偵測）已依使用者決定補進工具（移植自較新的工具版本，只加 `ledger_text`、`carry_over`、`cmd_assumption` 與接線），映像重建，實測 add、add --fact、set（無證據拒絕、有證據通過）、list 都正常；檢查工具現為 0 個問題，並加入 `scripts/verify.sh`。6.2 已完成兩項：①**修改清單自動產生**（`flow/change_list.py`：由與原始版本的差異產生修改區域，並與 HDL 的 `rtl_changes` 自動核對；在這次的真實資料上得到 12 筆記錄、10 個不同位置、2 組重複記錄（blk3／blk7、blk8／blk9）、0 筆孤立，與架構手工核對的結果相同；`rtl_regression.py --changes` 可把它寫進回歸檔）；②**可觀測性**（`flow/usage.py` 記錄流程工具每次使用的時間、執行者、結果摘要，`flow/usage_report.py` 彙總 `rtl` 歷史、流程工具記錄與自報的 `skills_used`；schema 加選填欄位 `skills_used`，標明為自述）。限制：`rtl` 歷史沒有執行者欄位，無法分出 orchestrator 與 HDL 的指令；技能是否被讀取沒有工具能看到，只能自述。尚未處理：6.2 的其餘項目（放寬關卡、狀態類單元的比對、請求監看、看板）。
 
 原計畫：
 1. 先寫「通用原則」的 agent.md 修改稿（每個角色一份差異），給你看，不直接改。

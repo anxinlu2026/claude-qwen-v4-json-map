@@ -7,6 +7,8 @@ It writes both results into the HDL json ("harness_result") and into tool-blk<N>
 usage: block_harness.py EXCHANGE_DIR BLK_NUMBER [ROUND] [--when "rtl condition"] [--model-dir /tmp/ip_work/arch] [--no-write]
 The HDL json may carry "active_when": "<rtl expression>" at top level (the condition under which the block works; rtl blockcheck --when)."""
 import json, os, re, subprocess, sys, time
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import usage
 a = [x for x in sys.argv[1:] if not x.startswith('--')]; opts = {}
 argv = sys.argv[1:]; i = 0
 while i < len(argv):
@@ -96,6 +98,7 @@ if not opts.get('--no-write'):
     H['harness_result'] = {"function_check": {"rows": len(rows), "match": ok, "mismatch": bad, "raw": f"tool-blk{n}-check-v{K}.json"},
                            "input_check": {"rows": len(steps), "match": hit, "mismatch": len(steps) - hit, "raw": f"tool-blk{n}-check-v{K}.json"}}
     json.dump(H, open(hp, 'w'), ensure_ascii=False, indent=1)
+usage.log(ex, 'block_harness', block=f'blk{n}', round=K, function_rows=len(rows), function_match=ok, function_mismatch=bad, input_steps=len(steps), input_seen=hit, mode=res.get('function_check_mode', 'model_cli'))
 print(f"blk{n} {bid}: function check rows {len(rows)}  match {ok}  mismatch {bad}   |   input check: {hit}/{len(steps)} harness steps' inputs seen in order")
 if first_bad: print('  first harness step whose inputs the RTL never gave:', json.dumps(first_bad)[:300])
 for d in diffs[:3]: print('  mismatch row t=%s: xor(rtl,model) per byte: %s' % (d['t'], ' '.join(d['xor_per_byte'])))

@@ -4,6 +4,8 @@ usage: validate_json.py EXCHANGE_DIR [FILE ...]   (default: every arch-/hdl-/too
 Checks: valid JSON; envelope (from,to,round,block) equals the file name; no TODO; message ids unique per file; replies_to exist in the other side's files of the same block;
 allowed words for kind/edge/storage/level fields; hdl-blk files carry rtl_map, ports, confidence, difficulty, control."""
 import glob, json, os, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import usage
 ex = sys.argv[1]; files = sys.argv[2:] or sorted(glob.glob(os.path.join(ex, '*.json')))
 KIND = {'pulse', 'level', 'held', 'data', 'n/a', 'unknown', 'none'}; EDGE = {'rising', 'falling', 'n/a', 'unknown'}; STOR = {'combinational', 'register', 'n/a', 'unknown'}
 problems = []
@@ -26,6 +28,7 @@ for f in files:
     if d.get('from') != frm: bad(f, f"envelope from={d.get('from')!r} but file name says {frm!r}")
     if d.get('block') != blk: bad(f, f"envelope block={d.get('block')!r} but file name says {blk!r}")
     if d.get('round') != k: bad(f, f"envelope round={d.get('round')!r} but file name says v{k}")
+    if 'skills_used' in d and not (isinstance(d['skills_used'], list) and all(isinstance(x, str) for x in d['skills_used'])): bad(f, 'skills_used must be a list of strings')
     walk(d, lambda p, v: bad(f, f'TODO left at {p}') if isinstance(v, str) and 'TODO' in v else None)
     ids = []
     for sec in ('to_hdl', 'questions', 'assumptions', 'rtl_changes', 'decisions', 'replies'):
@@ -46,6 +49,7 @@ for f in files:
             if isinstance(d.get(key), dict) and d[key].get('level') not in allowed: bad(f, f'{key}.level must be one of {sorted(allowed)}')
         if isinstance(d.get('control'), dict) and d['control'].get('assessment') not in ('consistent', 'suspect', 'unknown'): bad(f, 'control.assessment must be consistent|suspect|unknown')
         if d.get('status') not in ('aligned', 'open', 'stuck'): bad(f, 'status must be aligned|open|stuck')
+usage.log(ex, 'validate_json', files=len(files), problems=len(problems))
 print(f'{len(files)} file(s) checked, {len(problems)} problem(s)')
 for p in problems: print('  -', p)
 sys.exit(1 if problems else 0)

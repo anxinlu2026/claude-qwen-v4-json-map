@@ -6,6 +6,7 @@
 - 檔名：`arch-top-model-v<K>.json`、`arch-blk<N>-model-v<K>.json`、`arch-blk<N>-harness-v<K>.json`、`hdl-blk<N>-rtl-v<K>.json`；待決定：`hdl-top-rtl-v<K>.json`、腳本產生的 `tool-top-regression-v<K>.json`。
 - `<K>` 是輪次（0、1、2、3），全部方塊同步；每輪每個方塊都有檔案，沒有變動的標 `"no_change": true`。舊版不覆蓋。
 - **信封（每份檔案的最前面，四欄）**：`from`（`arch`、`hdl`、`tool`）、`to`、`round`（整數，等於檔名的 K）、`block`（`blk0`…，top 用 `top`）。驗證腳本檢查信封與檔名一致。
+- 選填欄位 `skills_used`（字串清單，放在信封旁）：自報這一輪用了哪些技能。它是自述，沒有工具能看到技能被讀取，報告時會標明「自述」。
 - 值看不出來就寫 `"unknown"` 並列入該物件的 `unknown` 清單，不猜。
 - 凡是陳述都附證據：行號、探測原文、規格章節，或對方的訊息 id。
 - 訊息 id：架構 `a1, a2…`，HDL 問題 `q1…`、假設 `h1…`、修改 `c1…`；在同一方塊內唯一，跨輪次不重用。回覆用 `replies_to` 指向對方 id。
