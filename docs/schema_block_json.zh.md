@@ -79,6 +79,7 @@ v0：規格層級；v1 起：`elements` 細到暫存器層級（仍只依規格�
 ```json
 {
   "from": "hdl", "to": "arch", "round": 0, "block": "blk0",
+  "active_when": "<這個方塊有作用時成立的 RTL 條件,給 rtl blockcheck 的 --when>",
   "rtl_map": [
     {"file": "<檔名>", "lines": "83-101", "kind": "always_comb|always_ff|assign|instance", "drives": ["<訊號>"], "source": "<rtl show 的輸出行號>"}
   ],
@@ -138,3 +139,10 @@ HDL 記錄「整個設計」的 RTL 事實，與 `arch-top-model` 對應。
 
 ## 7. 形式檢查（orchestrator 的腳本，不做技術判斷）
 信封四欄與檔名一致、JSON 合法、必填欄位齊全、無 `TODO`、訊息 id 唯一、`replies_to` 指向存在的 id、每個陳述附證據欄位、`kind`、`edge`、`storage`、`level` 等的取值在允許清單內。
+
+## 8. 已決定事項（2026-10-18）
+- 信封四欄：`from`、`to`、`round`、`block`。
+- 模型回歸由架構負責（模型串仍通過 testbench harness，才能發新版模型）；RTL 回歸由 HDL 跑（重跑 top testbench，`flow/rtl_regression.py`）；只有 testbench 通過才跑官方測試（orchestrator，`flow/official_test.sh`）。
+- `hdl-top-rtl-v<K>.json` 納入流程。
+- HDL 決定怎麼修 RTL；架構依規格與 testbench 決定是否改模型，可以拒絕（`decisions` 的 `model_kept`）。架構只提出假設與懷疑，不給執行指令。
+- 輪數上限 v0 到 v3；評估階段由 Codex 獨立 session 擔任 HDL，快速幾輪看流程是否帶來好處。

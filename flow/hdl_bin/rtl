@@ -1,0 +1,3 @@
+#!/bin/sh
+# 包裝:在本機執行 rtl,實際在容器 orders_v5a 內運作(RTL 工作區已掛載)
+exec docker exec -i orders_v5a rtl "$@"

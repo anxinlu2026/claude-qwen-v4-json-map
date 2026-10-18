@@ -1,0 +1,5 @@
+#!/bin/bash
+# 官方測試(cocotb)對某個 cell 的 RTL;只有 testbench 通過時才由 orchestrator 執行。用法: flow/official_test.sh CELL_DIR
+HERE="$(cd "$(dirname "$0")/.." && pwd)"; E=$1; W=$(ls -d $E/work/*/harness/5); SIM=multi-ai/cvdp-sim:8e894cf-arm64
+G=$(mktemp -d); mkdir -p $G/rtl $G/rundir; cp -R $W/src $G/src; rm -rf $G/src/__pycache__; cp -R $HERE/seed_run/work/cvdp_agentic_AES_encryption_decryption/harness/5/before/verif $G/verif; cp -R $HERE/seed_run/work/cvdp_agentic_AES_encryption_decryption/harness/5/before/docs $G/docs; cp $W/rtl/* $G/rtl/; chmod -R 777 $G
+docker run --rm -e "VERILOG_SOURCES=/code/rtl/aes128_decrypt.sv /code/rtl/aes128_key_expansion.sv /code/rtl/sbox.sv /code/rtl/inv_sbox.sv" -e TOPLEVEL=aes128_decrypt -e MODULE=test_aes128_decrypt -e SIM=icarus -e TOPLEVEL_LANG=verilog -e PYTHONPATH=/src -e HASH=5-debug-and-fix-aes128_decrypt -e WAVE=true -v $G/src:/src -v $G/rtl:/code/rtl -v $G/verif:/code/verif -v $G/docs:/code/docs -v $G/rundir:/code/rundir -w /code/rundir $SIM pytest /src/test_runner.py -o cache_dir=/code/rundir/.cache 2>&1 | tail -3
