@@ -12,7 +12,7 @@ open(f'{R}/control/case_{N}.md','w').write(hdr+o+"\n")
 P
 T=$(grep -m1 -o "TYPE: [A-Z ]*[A-Z]" $R/control/case_$N.md | sed 's/TYPE: //')
 python3 $D/dashboard/orch.py handoff $O "order_$O.md from the architecture session relayed unchanged as case_$N.md" --run $R >/dev/null
-python3 $D/dashboard/orch.py issue $O "$T (architecture order $O) to Qwen 27B 8-bit thinking off, conversation $N; 480 s" --run $R >/dev/null
+python3 $D/dashboard/orch.py issue $O "$T (architecture order $O) to Qwen 27B 8-bit thinking off, conversation $N; limit set by the runner" --run $R >/dev/null
 for i in $(seq 1 60); do f=$(find $R/work -name 'request_*.md' -newer $R/control/case_$N.md | head -1); [ -n "$f" ] && break; [ -f $R/control/conv_$N.done ] && break; sleep 8; done
 date +%H:%M:%S; echo "$f" | sed 's#.*/##'
 sed -n '/^## Report/,/^## Recorded/p' "$f" | head -6 | cut -c1-1800
