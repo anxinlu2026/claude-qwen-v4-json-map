@@ -3,8 +3,8 @@
 
 然後：
 1. 讀架構的 v1：/Users/anxin/AI/benchmarks/multi-ai/claude/cvdp_aes0005_qwen_json/runs/orders-cvdp_agentic_AES_encryption_decryption_0005-qwen8-qc-v5a-20261018/exchange/arch-top-model-v1.json、arch-blk0..14-model-v1.json（重點在 to_hdl 與 decisions）、arch-blk1/2/8/13-harness-v1.json。
-2. 執行 python3 /flow/next_round_hdl.py /Users/anxin/AI/benchmarks/multi-ai/claude/cvdp_aes0005_qwen_json/runs/orders-cvdp_agentic_AES_encryption_decryption_0005-qwen8-qc-v5a-20261018/exchange 0 （v1 檔案我已經替你複製好了，若已存在會略過），再依 README 的規則更新 hdl-blk0..14-rtl-v1.json 與 hdl-top-rtl-v1.json。
+2. 執行 python3 /Users/anxin/AI/benchmarks/multi-ai/claude/cvdp_aes0005_qwen_json/flow/next_round_hdl.py /Users/anxin/AI/benchmarks/multi-ai/claude/cvdp_aes0005_qwen_json/runs/orders-cvdp_agentic_AES_encryption_decryption_0005-qwen8-qc-v5a-20261018/exchange 0 （v1 檔案我已經替你複製好了，若已存在會略過），再依 README 的規則更新 hdl-blk0..14-rtl-v1.json 與 hdl-top-rtl-v1.json。
 3. 你可以修改 RTL（規則見 README）。請記錄每個修改，並在每次修改後重跑方塊 harness 與 RTL 回歸。
 4. 沒有變動的方塊把 no_change 設為 true。
 5. 完成後告訴使用者：改了哪些、每個方塊 harness 與回歸的結果、testbench 的目前狀態、你想問架構的問題。
-工具環境與路徑與第 0 輪相同（export PATH=/flow/hdl_bin:$PATH）。
+工具環境與路徑與第 0 輪相同（export PATH=/Users/anxin/AI/benchmarks/multi-ai/claude/cvdp_aes0005_qwen_json/flow/hdl_bin:$PATH）。
