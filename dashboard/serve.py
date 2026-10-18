@@ -229,6 +229,49 @@ def collect(run):
     return {'orders': orders, 'olog': olog, 'arch': arch, 'convs': convs, 'reqs': reqs, 'state': st, 'hist': hist, 'live': live, 'proto': proto, 'deliv': deliv, 'log': log}
 
 
+
+def flow_section(run):
+    """Block-map flow (arch/hdl JSON exchange): one row per block from exchange/*.json, derived from the files; plus regression and the orchestrator's runlog."""
+    ex = os.path.join(run, 'exchange')
+    if not os.path.isdir(ex): return ''
+    def lj(path):
+        try: return json.load(open(path))
+        except Exception: return None
+    files = sorted(os.listdir(ex)); rounds = [int(m.group(1)) for f in files for m in [re.search(r'-v(\d+)\.json$', f)] if m]
+    top = lj(os.path.join(ex, 'arch-top-model-v%d.json' % (max(r for r in rounds) if rounds else 0))) or lj(os.path.join(ex, 'arch-top-model-v0.json')) or {}
+    h = ['<h2>Block map flow (arch ↔ hdl JSON)</h2>']
+    hdl_n = sum(1 for f in files if f.startswith('hdl-blk'))
+    h.append(f'<p class="meta">rounds seen: {sorted(set(rounds))} · hdl block files: {hdl_n} / {len(top.get("blocks", []))} · exchange files: {len(files)}</p>')
+    rows = []
+    for b in top.get('blocks', []):
+        bid = b['id']; vs = sorted((int(m.group(1)) for f in files for m in [re.match(r'hdl-%s-rtl-v(\d+)\.json$' % bid, f)] if m))
+        if not vs:
+            rows.append(f'<tr><td>{esc(bid)}</td><td>{esc(b["name"])}</td><td colspan="9" style="color:#888">no hdl file yet</td></tr>'); continue
+        v = vs[-1]; fp = os.path.join(ex, f'hdl-{bid}-rtl-v{v}.json'); d = lj(fp)
+        if d is None:
+            rows.append(f'<tr class="bad"><td>{esc(bid)}</td><td>{esc(b["name"])}</td><td>v{v}</td><td colspan="8">invalid JSON</td></tr>'); continue
+        todo = open(fp).read().count('TODO'); hr = d.get('harness_result') or {}
+        fc = hr.get('function_check') or {}; ic = hr.get('input_check') or {}
+        fcs = f'{fc.get("match")}/{fc.get("rows")}' if fc else '—'; ics = f'{ic.get("match")}/{ic.get("rows")}' if ic else '—'
+        bad = (fc.get('mismatch') or 0) > 0 or (ic.get('mismatch') or 0) > 0
+        conf = (d.get('confidence') or {}).get('level', '—'); dif = (d.get('difficulty') or {}).get('level', '—'); ctl = (d.get('control') or {}).get('assessment', '—')
+        rows.append(f'<tr class="{"bad" if bad else ""}"><td>{esc(bid)}</td><td>{esc(b["name"])}</td><td>v{v}</td><td>{"TODO×%d" % todo if todo else "ok"}</td><td>{esc(fcs)}</td><td>{esc(ics)}</td>'
+                    f'<td>{esc(conf)}</td><td>{esc(dif)}</td><td>{esc(ctl)}</td><td>{esc(d.get("status", "—"))}</td>'
+                    f'<td>q{len(d.get("questions") or [])} h{len(d.get("assumptions") or [])} c{len(d.get("rtl_changes") or [])}</td></tr>')
+    h.append('<table><tr><th>blk</th><th>block</th><th>hdl ver</th><th>TODO</th><th>function check (match/rows)</th><th>input check (match/steps)</th><th>confidence</th><th>difficulty</th><th>control</th><th>status</th><th>questions / assumptions / changes</th></tr>' + ''.join(rows) + '</table>')
+    ht = sorted(f for f in files if f.startswith('hdl-top-rtl'))
+    h.append(f'<p class="meta">hdl top file: {esc(", ".join(ht) or "not yet")}</p>')
+    regs = sorted(f for f in files if f.startswith('tool-top-regression'))
+    for f in regs[-3:]:
+        r = lj(os.path.join(ex, f)) or {}; tb = r.get('testbench', {}); of = r.get('official_harness', {})
+        h.append(f'<p class="meta">{esc(f)}: testbench <b>{esc(tb.get("result"))}</b> ({esc(tb.get("fail"))} FAIL, {esc(tb.get("pass"))} PASS) · observed {esc(tb.get("observed"))} · official {esc(of.get("result"))}</p>')
+    recent = sorted(((os.path.getmtime(os.path.join(ex, f)), f) for f in files if not f.startswith('arch-') and f != 'README_HDL.md'), reverse=True)[:6]
+    if recent: h.append('<p class="meta">latest changes: ' + ' · '.join(f'{esc(f)} ({clock(t)})' for t, f in recent) + '</p>')
+    rl = os.path.join(run, 'runlog.md')
+    if os.path.exists(rl): h.append('<details><summary>runlog.md (problems and dynamic fixes)</summary><pre>' + esc(read(rl)) + '</pre></details>')
+    return '\n'.join(h)
+
+
 def render(run):
     d = collect(run)
     name = os.path.basename(run)
@@ -242,8 +285,12 @@ def render(run):
     h.append(f'<h1>{esc(name)}</h1>')
     h.append(f'<p class="meta">model <b>{esc(p.get("model", ""))}</b> · kickoff {esc(os.path.basename(str((ses[-1] or {}).get("kickoff_file", ""))))} · '
              f'effort {esc((ses[-1] or {}).get("reasoning_effort", ""))} · conversations {len(convs)} · reports {len(d["reqs"])} · tool calls {len(d["hist"])} · refreshed {clock(now)}</p>')
+    fl = flow_section(run)
+    if fl: h.append(fl)
     # status
-    if last is None:
+    if last is None and fl:
+        pass
+    elif last is None:
         h.append('<div class="box wait">Waiting for the first work order (no <code>control/case_0.md</code> yet).</div>')
     elif running:
         el = int(now - cur.get('start', now))
@@ -256,7 +303,7 @@ def render(run):
     else:
         h.append(f'<div class="box idle">Idle: conversation {last} ended ({esc(cur.get("reason", ""))}). The next work order is the orchestrator\'s turn.</div>')
     # stage board: every order of the plan, by state
-    sb = stage_board(d, run)
+    sb = None if fl else stage_board(d, run)
     if sb:
         h.append('<h2>Stage board (A1–A6)</h2><div class="kan sb">')
         for c in ('Backlog', 'Ready', 'Running', 'Reported', 'Not pass', 'Ended without report', 'Closed'):
