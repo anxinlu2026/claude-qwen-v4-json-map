@@ -1,0 +1,257 @@
+{
+ "gap": 0,
+ "regions": [
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "65-65",
+   "cur_lines": "65-69",
+   "removed": 1,
+   "added": 5,
+   "id": "d1"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "68-72",
+   "cur_lines": "72-72",
+   "removed": 5,
+   "added": 1,
+   "id": "d2"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "87-87",
+   "cur_lines": "87-87",
+   "removed": 1,
+   "added": 1,
+   "id": "d3"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "89-89",
+   "cur_lines": "89-89",
+   "removed": 1,
+   "added": 1,
+   "id": "d4"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "119-119",
+   "cur_lines": "119-119",
+   "removed": 1,
+   "added": 1,
+   "id": "d5"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "129-137",
+   "cur_lines": "129-131",
+   "removed": 9,
+   "added": 3,
+   "id": "d6"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "144-148",
+   "cur_lines": "137(delete)",
+   "removed": 5,
+   "added": 0,
+   "id": "d7"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "151-156",
+   "cur_lines": "140-145",
+   "removed": 6,
+   "added": 6,
+   "id": "d8"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "158-162",
+   "cur_lines": "147-152",
+   "removed": 5,
+   "added": 6,
+   "id": "d9"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "164-168",
+   "cur_lines": "154-158",
+   "removed": 5,
+   "added": 5,
+   "id": "d10"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "orig_lines": "170-174",
+   "cur_lines": "160-170",
+   "removed": 5,
+   "added": 11,
+   "id": "d11"
+  },
+  {
+   "file": "aes128_key_expansion.sv",
+   "orig_lines": "49-50",
+   "cur_lines": "49-50",
+   "removed": 2,
+   "added": 2,
+   "id": "d12"
+  },
+  {
+   "file": "aes128_key_expansion.sv",
+   "orig_lines": "103-106",
+   "cur_lines": "103-106",
+   "removed": 4,
+   "added": 4,
+   "id": "d13"
+  }
+ ],
+ "records": [
+  {
+   "block": "blk0",
+   "id": "c1",
+   "file": "aes128_decrypt.sv",
+   "lines": "87",
+   "status": "applied",
+   "regions": [
+    "d3"
+   ]
+  },
+  {
+   "block": "blk1",
+   "id": "c1",
+   "file": "aes128_decrypt.sv",
+   "lines": "89",
+   "status": "applied",
+   "regions": [
+    "d4"
+   ]
+  },
+  {
+   "block": "blk10",
+   "id": "c1",
+   "file": "aes128_decrypt.sv",
+   "lines": "158-174",
+   "status": "applied",
+   "regions": [
+    "d9",
+    "d10",
+    "d11"
+   ]
+  },
+  {
+   "block": "blk12",
+   "id": "c1",
+   "file": "aes128_decrypt.sv",
+   "lines": "129-131",
+   "status": "applied",
+   "regions": [
+    "d6"
+   ]
+  },
+  {
+   "block": "blk12",
+   "id": "c2",
+   "file": "aes128_decrypt.sv",
+   "lines": "138-145",
+   "status": "applied",
+   "regions": [
+    "d7",
+    "d8"
+   ]
+  },
+  {
+   "block": "blk13",
+   "id": "c1",
+   "file": "aes128_decrypt.sv",
+   "lines": "63-73",
+   "status": "applied",
+   "regions": [
+    "d1",
+    "d2"
+   ]
+  },
+  {
+   "block": "blk13",
+   "id": "c2",
+   "file": "aes128_decrypt.sv",
+   "lines": "147-170",
+   "status": "applied",
+   "regions": [
+    "d7",
+    "d8",
+    "d9",
+    "d10",
+    "d11"
+   ]
+  },
+  {
+   "block": "blk2",
+   "id": "c1",
+   "file": "aes128_key_expansion.sv",
+   "lines": "49-53",
+   "status": "applied",
+   "regions": [
+    "d12"
+   ]
+  },
+  {
+   "block": "blk3",
+   "id": "c1",
+   "file": "aes128_key_expansion.sv",
+   "lines": "103-106",
+   "status": "applied",
+   "regions": [
+    "d13"
+   ]
+  },
+  {
+   "block": "blk7",
+   "id": "c1",
+   "file": "aes128_key_expansion.sv",
+   "lines": "103-106",
+   "status": "applied",
+   "regions": [
+    "d13"
+   ]
+  },
+  {
+   "block": "blk8",
+   "id": "c1",
+   "file": "aes128_decrypt.sv",
+   "lines": "119",
+   "status": "applied",
+   "regions": [
+    "d5"
+   ]
+  },
+  {
+   "block": "blk9",
+   "id": "c1",
+   "file": "aes128_decrypt.sv",
+   "lines": "119",
+   "status": "applied",
+   "regions": [
+    "d5"
+   ]
+  }
+ ],
+ "reconciliation": {
+  "regions": 13,
+  "records": 12,
+  "records_matching_no_region": [],
+  "regions_without_record": [],
+  "distinct_record_places": 10,
+  "distinct_record_locations(file,lines)": 10,
+  "records_repeating_a_place": [
+   [
+    "blk3.c1",
+    "blk7.c1"
+   ],
+   [
+    "blk8.c1",
+    "blk9.c1"
+   ]
+  ]
+ }
+}

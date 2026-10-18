@@ -38,3 +38,4 @@
 - 10-18 19:10 請架構做收尾審查（v2）：逐筆審查 rtl_changes（依規格與 testbench）、核對計數不一致（HDL 說 9 處、rtl_changes 12 筆、工具 13 處、diff 6 個片段）、判斷 blk1/2/8/13、寫 v2、是否可結案。
 - 10-18 19:18 架構收尾審查（v2）完成（約 3 分鐘）：17 份 v2；orchestrator 檢查：格式 0 問題、v0 未動、模型回歸 ALL PASS（重跑）、RTL 自官方測試後未改變；計數機械核對與架構相符（12 筆 rtl_changes＝10 個不同位置＋2 筆重複記錄；diff 6 個片段）。架構結論：可以結案；逐筆審查 10 個修改均有規格或 testbench 依據；未發現針對測試向量的常數；仍有疑慮（不阻擋結案）：重置後以 i_update_key=0 開始會停在 round_ff=1（規格未定義）、金鑰展開只重跑 steps[2]、blk8 為間接證據。
 - 10-18 19:20 流程不足（架構觀察，待修）：狀態類方塊的 function check 不可用（需要值對應 register_mapping）；工具計數與 HDL 計數不一致（建議由腳本從 diff 產生修改清單）；重複方塊的 rtl_changes 被記兩次（建議以修改為單位記一筆，方塊引用 id）。
+- 10-18 22:15 6.2 的工具項目完成：關卡模式（RTL_FLOW_MODE=exchange，預設仍是 strict；實測 strict 在第二次修改被擋、exchange 在一次比對後放行）、狀態類單元的值對應檢查（register_mapping：blk1 11/11 預期暫存器值依序出現）、請求監看（flow/request_watch.py）、看板顯示修改清單／核對／工具使用／等待中的請求。看板曾把兩個已無人等待的舊請求（request_2 為 resume 記錄、request_next_1 為第 1 輪舊報告）顯示成等待；已寫入答覆關閉。注意：orchestrator 為測試 block_harness 在已結束的 v5a 容器上執行過 rtl（22:13，HDL session 已結束，無干擾）。

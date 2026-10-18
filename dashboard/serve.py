@@ -267,6 +267,36 @@ def flow_section(run):
         h.append(f'<p class="meta">{esc(f)}: testbench <b>{esc(tb.get("result"))}</b> ({esc(tb.get("fail"))} FAIL, {esc(tb.get("pass"))} PASS) · observed {esc(tb.get("observed"))} · official {esc(of.get("result"))}</p>')
     recent = sorted(((os.path.getmtime(os.path.join(ex, f)), f) for f in files if not f.startswith('arch-') and f != 'README_HDL.md'), reverse=True)[:6]
     if recent: h.append('<p class="meta">latest changes: ' + ' · '.join(f'{esc(f)} ({clock(t)})' for t, f in recent) + '</p>')
+    # modification list: the HDL engineer's records (latest version of each block) and the list generated from the difference
+    ch = []
+    for b in top.get('blocks', []):
+        vs = sorted((int(m.group(1)) for f in files for m in [re.match(r'hdl-%s-rtl-v(\d+)\.json$' % b['id'], f)] if m))
+        d = lj(os.path.join(ex, f'hdl-{b["id"]}-rtl-v{vs[-1]}.json')) if vs else None
+        for c_ in (d or {}).get('rtl_changes') or []:
+            ch.append(f'<tr><td>{esc(b["id"])}</td><td>{esc(c_.get("id"))}</td><td>{esc(c_.get("file"))}</td><td>{esc(c_.get("lines"))}</td><td>{esc(c_.get("status"))}</td><td>{esc(c_.get("based_on"))}</td><td>{esc(str(c_.get("reason", ""))[:110])}</td></tr>')
+    if ch: h.append('<details><summary>RTL changes recorded by the HDL engineer (%d)</summary><table><tr><th>blk</th><th>id</th><th>file</th><th>lines</th><th>status</th><th>based on</th><th>reason</th></tr>%s</table></details>' % (len(ch), ''.join(ch)))
+    for f in sorted(x for x in files if x.startswith('tool-top-changes'))[-1:]:
+        t = lj(os.path.join(ex, f)) or {}; rc = t.get('reconciliation', {})
+        if rc: h.append(f'<p class="meta">{esc(f)} (generated from the difference): regions {esc(rc.get("regions"))} · records {esc(rc.get("records"))} · distinct record locations {esc(rc.get("distinct_record_locations(file,lines)"))} · records matching no region {esc(rc.get("records_matching_no_region"))} · regions without a record {esc(rc.get("regions_without_record"))} · repeated: {esc(rc.get("records_repeating_a_place"))}</p>')
+    # tool usage: rtl commands from the rtl history, flow tools from the usage log
+    hist = os.path.join(run, 'state', 'rtlwork', 'history.jsonl'); rc_ = {}
+    if os.path.exists(hist):
+        for l in open(hist):
+            try: c0 = (json.loads(l).get('cmd') or '').split(' ')[0]
+            except Exception: continue
+            if c0: rc_[c0] = rc_.get(c0, 0) + 1
+    fl = {}; ulog = os.path.join(ex, 'usage-log.jsonl')
+    if os.path.exists(ulog):
+        for l in open(ulog):
+            try: t_ = json.loads(l)
+            except Exception: continue
+            k_ = f'{t_.get("actor")}:{t_.get("tool")}'; fl[k_] = fl.get(k_, 0) + 1
+    if rc_ or fl:
+        h.append('<p class="meta">tool use · rtl: ' + esc(', '.join(f'{k} {v}' for k, v in sorted(rc_.items(), key=lambda x: -x[1])[:10])) + ' · flow tools: ' + esc(', '.join(f'{k} {v}' for k, v in sorted(fl.items(), key=lambda x: -x[1])) or 'none logged') + '</p>')
+    # requests waiting for an answer (read from the worker's request files)
+    box = next(iter(glob.glob(os.path.join(run, 'work', '*', 'harness', '*', 'rundir', '.orchestrator'))), '')
+    pend = [os.path.basename(f) for f in sorted(glob.glob(os.path.join(box, 'request_*.md'))) if not os.path.exists(f.replace('request_', 'answer_'))]
+    h.append(f'<p class="meta">requests waiting for an answer: <b>{esc(", ".join(pend) or "none")}</b></p>' if not pend else f'<div class="box wait"><b>Requests waiting for an answer:</b> {esc(", ".join(pend))}</div>')
     rl = os.path.join(run, 'runlog.md')
     if os.path.exists(rl): h.append('<details><summary>runlog.md (problems and dynamic fixes)</summary><pre>' + esc(read(rl)) + '</pre></details>')
     return '\n'.join(h)

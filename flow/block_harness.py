@@ -92,13 +92,32 @@ for s_ in steps:
     if found: hit += 1
     elif first_bad is None: first_bad = {"step": s_['step'], "wanted": dict(zip(order, want))}
 res["mismatch_rows_compact"] = [{"t": r["t"], "rtl_out": r["rtl_out"], "model_out": r["model_out"]} for r in rows if r["result"].startswith("MISMATCH")][:8]
+# value mapping for stateful units: the architecture lists the values the unit's output register is expected to hold, in order
+# (harness field register_mapping.rows[*] with a key starting with "rtl_register" or "rtl_value"); check they appear in order in the RTL output
+rm = HA.get('register_mapping') or {}
+if rm.get('rows'):
+    exp = []
+    for r_ in rm['rows']:
+        k_ = next((k for k in r_ if k.startswith('rtl_register') or k.startswith('rtl_value')), None)
+        if k_: exp.append(str(r_[k_]).lower().replace('0x', ''))
+    pt2 = subprocess.run(['rtl', 'probe', outsig, '--max', '120'], capture_output=True, text=True); seq_ = []
+    for line in (pt2.stdout + pt2.stderr).splitlines():
+        c = [x.strip() for x in line.split('|')]
+        if len(c) >= 2 and c[0].isdigit(): seq_.append(c[1].lower())
+    pos2 = 0; seen2 = 0; miss = None
+    for k2, v2 in enumerate(exp):
+        if v2 in seq_[pos2:]: pos2 = seq_.index(v2, pos2) + 1; seen2 += 1
+        elif miss is None: miss = {"index": k2, "expected": v2}
+    res["register_mapping_check"] = {"note": rm.get('note', '')[:300], "expected_values": len(exp), "seen_in_order": seen2, "first_not_seen": miss, "rtl_rows_sampled": len(seq_)}
 res["input_check"] = {"steps": len(steps), "steps_whose_inputs_were_seen_in_order": hit, "not_seen": len(steps) - hit, "first_step_not_seen": first_bad}
 json.dump(res, open(os.path.join(ex, f'tool-blk{n}-check-v{K}.json'), 'w'), ensure_ascii=False, indent=1)
 if not opts.get('--no-write'):
     H['harness_result'] = {"function_check": {"rows": len(rows), "match": ok, "mismatch": bad, "raw": f"tool-blk{n}-check-v{K}.json"},
                            "input_check": {"rows": len(steps), "match": hit, "mismatch": len(steps) - hit, "raw": f"tool-blk{n}-check-v{K}.json"}}
+    if "register_mapping_check" in res: H['harness_result']['register_mapping_check'] = {k: res['register_mapping_check'][k] for k in ('expected_values', 'seen_in_order', 'first_not_seen')}
     json.dump(H, open(hp, 'w'), ensure_ascii=False, indent=1)
 usage.log(ex, 'block_harness', block=f'blk{n}', round=K, function_rows=len(rows), function_match=ok, function_mismatch=bad, input_steps=len(steps), input_seen=hit, mode=res.get('function_check_mode', 'model_cli'))
 print(f"blk{n} {bid}: function check rows {len(rows)}  match {ok}  mismatch {bad}   |   input check: {hit}/{len(steps)} harness steps' inputs seen in order")
+if 'register_mapping_check' in res: print('  register mapping check: %d of %d expected register values seen in order in the RTL output' % (res['register_mapping_check']['seen_in_order'], res['register_mapping_check']['expected_values']))
 if first_bad: print('  first harness step whose inputs the RTL never gave:', json.dumps(first_bad)[:300])
 for d in diffs[:3]: print('  mismatch row t=%s: xor(rtl,model) per byte: %s' % (d['t'], ' '.join(d['xor_per_byte'])))
