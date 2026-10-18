@@ -1,5 +1,7 @@
 # 流程評估：方塊對應流程（v5a）第 1 輪結果
 
+(問答形式的 review summary 見 `REVIEW_SUMMARY_flow_round1.zh.md`。)
+
 HDL：使用者開的獨立 session「JSON map flow v2」（使用者說明是 Codex app；訊息層標示為 Claude Desktop session，orchestrator 無法從這端確認底層模型）。架構：獨立 Claude session。orchestrator：Claude（本 session）。設計：原始 RTL（AES_0005，12 個錯誤）。
 
 ## 時間線（2026-10-18）
