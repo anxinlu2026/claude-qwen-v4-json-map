@@ -1,0 +1,27 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk0",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 0,
+   "model_condition": "start row, i_data = testbench ciphertext",
+   "inputs": {
+    "i_data": "3925841d02dc09fbdc118597196a0b32"
+   },
+   "outputs": {
+    "state_in": "3925841d02dc09fbdc118597196a0b32"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "always (captured into state_reg at the start edge)",
+   "type": "combinational"
+  }
+ ],
+ "register_expected": []
+}

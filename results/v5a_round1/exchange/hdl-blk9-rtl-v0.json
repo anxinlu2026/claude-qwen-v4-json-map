@@ -1,0 +1,152 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk9",
+ "name": "add_round_key",
+ "active_when": "round_ff == 11",
+ "rtl_map": [
+  {
+   "file": "aes128_decrypt.sv",
+   "lines": "118-122",
+   "kind": "always_comb",
+   "drives": [
+    "AddRoundKey"
+   ],
+   "source": "119: AddRoundKey[i][j] = current_data_ff[i][j] ^ expanded_key[...];  121: AddRoundKey[i][j] = 0;(round_ff == 0)"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "state",
+    "upstream": "current_data_ff(暫存器,而非架構的 inv_sub_bytes.state_out;見 q1)",
+    "arch_connected_to": "state_reg.q, inv_sub_bytes.state_out",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff > 0 (line 118)",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 1,
+     "latency_max_cycles": 1,
+     "source": "aes128_decrypt.sv 119: current_data_ff[i][j] ^ ...",
+     "unknown": [
+      "架構的 state_out(blk11) 在 RTL 先進暫存器 current_data_ff 再進 ARK"
+     ]
+    }
+   },
+   {
+    "arch_port": "round_key",
+    "upstream": "expanded_key 的 slot 11-round_ff(內嵌選擇,見 blk8)",
+    "arch_connected_to": "round_key_select.round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.expanded_key[1407:1280]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff > 0 (line 118)",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 119: expanded_key[NBW_EX_KEY-(11-round_ff)*NBW_KEY-(4*i+j)*NBW_BYTE-1-:NBW_BYTE]",
+     "unknown": [
+      "harness 的 signal 為 slot 0 切片 expanded_key[1407:1280](只對應 round_ff=11)"
+     ]
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "state_out",
+    "downstream": "MixColumns 的輸入(blk12)與 line 93 的 current_data_nx(round_ff==11)",
+    "arch_connected_to": "inv_mix_columns.state, round_mux.initial_path, round_mux.final_path",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff > 0",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 119: AddRoundKey[i][j] = ...;並在 93: current_data_nx[i][j] = AddRoundKey[i][j];",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 2,
+   "match": 2,
+   "mismatch": 0,
+   "raw": "tool-blk9-check-v0.json"
+  },
+  "input_check": {
+   "rows": 11,
+   "match": 0,
+   "mismatch": 11,
+   "raw": "tool-blk9-check-v0.json"
+  }
+ },
+ "confidence": {
+  "level": "low",
+  "reason": "harness 的 signal 只能對一個 slot(round_ff==11),僅 2 列且 slot 0 為全 0;其餘輪用補充逐輪重跑"
+ },
+ "difficulty": {
+  "level": "medium",
+  "reason": "round key 選擇內嵌於 XOR 式,無獨立訊號"
+ },
+ "control": {
+  "assessment": "suspect",
+  "items": [
+   {
+    "item": "有效條件(round_cnt 範圍)",
+    "expected": "round_cnt = 1..11",
+    "observed": "round_ff 在每次運轉取 2..c(十進位 2..12),t=5/125/245 為 0;值 1 從未出現,值 12 出現;起點不是 start 接受(round_ff 由 0 自行變 2)",
+    "verdict": "suspect",
+    "evidence": "rtl probe (RUN #17) rows: t=5 round_ff=0 o_done=1 | t=15 round_ff=2 o_done=0 | t=25 i_start=1 i_update_key=1 round_ff=3 o_done=0 | t=35..115 round_ff=4..c | t=125 round_ff=0 o_done=1 | t=135 i_start=1 round_ff=2 o_done=0 | t=145..235 round_ff=3..c | t=245 round_ff=0 o_done=1; aes128_decrypt.sv 68-72: 'if(round_ff >= 4'd12) begin round_ff <= 4'd0; end else begin round_ff <= 4'd2;'"
+   },
+   {
+    "item": "逐輪 function check(補充;HDL 以 block_harness --no-write,round key 取 slot 11-r 切片、--when round_ff == r)",
+    "expected": "byte-wise XOR 與 model 相符",
+    "observed": "round 11:2/2 match;round 2..10:各 2~3 列全 mismatch;round 1:0 列;round 12:未跑(slot 索引超出)",
+    "verdict": "suspect",
+    "evidence": "blk9_round2 (3,0,3), blk9_round3..10 (2,0,2), blk9_round11 (2,2,0), blk9_round1 (0,0,0);mismatch 與 blk8 h1 的 key 位元組序(轉置)一致,但尚未證實為同一原因"
+   }
+  ]
+ },
+ "questions": [
+  {
+   "id": "q1",
+   "text": "RTL 每個時脈做 AddRoundKey→InvMixColumns→InvShiftRows→InvSubBytes 再進暫存器(decrypt.sv 114-175、91);架構模型的每回合順序是 InvShiftRows→InvSubBytes→AddRoundKey→InvMixColumns 且暫存器在回合末。暫存器切點不同時,方塊 blk9..blk13 的輸入/輸出在 RTL 中對應的訊號是否仍要與 harness 的 state_reg.q 逐步相等?請問架構:要以哪一種切法為準?",
+   "refs": [
+    "aes128_decrypt.sv:91",
+    "aes128_decrypt.sv:114-175",
+    "arch-top-model-v0.json#connections"
+   ]
+  }
+ ],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "round 2..10 的 mismatch 可能來自 round key 位元組序(4*i+j)與架構(4*j+i)不同,而不是 XOR 本身。",
+   "evidence": "blk8 h1;round 11 match 是因 slot 0 為全 0。證據中等,未做『換序後是否 match』的實驗(第 0 輪不改 RTL)",
+   "status": "open"
+  }
+ ],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "open",
+ "unknown": [
+  "round 1 的行為(round_ff=1 從未出現)",
+  "真實金鑰下的結果"
+ ],
+ "no_change": false
+}

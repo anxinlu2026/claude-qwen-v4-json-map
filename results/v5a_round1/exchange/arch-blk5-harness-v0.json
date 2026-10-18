@@ -1,0 +1,117 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk5",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 1,
+   "model_condition": "key expansion step n=1",
+   "inputs": {
+    "rot": "cf4f3c09"
+   },
+   "outputs": {
+    "sub": "8a84eb01"
+   }
+  },
+  {
+   "step": 2,
+   "model_condition": "key expansion step n=2",
+   "inputs": {
+    "rot": "6c76052a"
+   },
+   "outputs": {
+    "sub": "50386be5"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "key expansion step n=3",
+   "inputs": {
+    "rot": "59f67f73"
+   },
+   "outputs": {
+    "sub": "cb42d28f"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "key expansion step n=4",
+   "inputs": {
+    "rot": "7a883b6d"
+   },
+   "outputs": {
+    "sub": "dac4e23c"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "key expansion step n=5",
+   "inputs": {
+    "rot": "0bad00db"
+   },
+   "outputs": {
+    "sub": "2b9563b9"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "key expansion step n=6",
+   "inputs": {
+    "rot": "f915bc11"
+   },
+   "outputs": {
+    "sub": "99596582"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "key expansion step n=7",
+   "inputs": {
+    "rot": "0093fdca"
+   },
+   "outputs": {
+    "sub": "63dc5474"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "key expansion step n=8",
+   "inputs": {
+    "rot": "a6dc4f4e"
+   },
+   "outputs": {
+    "sub": "2486842f"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "key expansion step n=9",
+   "inputs": {
+    "rot": "8d292f7f"
+   },
+   "outputs": {
+    "sub": "5da515d2"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "key expansion step n=10",
+   "inputs": {
+    "rot": "5c006e57"
+   },
+   "outputs": {
+    "sub": "4a639f5b"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "always",
+   "type": "combinational"
+  }
+ ],
+ "register_expected": []
+}

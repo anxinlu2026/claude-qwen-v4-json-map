@@ -1,0 +1,114 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk4",
+ "name": "rot_word",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "99-100",
+   "kind": "always_comb",
+   "drives": [
+    "steps[2].RotWord"
+   ],
+   "source": "100: RotWord = {expanded_key_ff[NBW_OUT-(i+1)*NBW_KEY+NBW_WORD-NBW_BYTE-1-:(NBW_WORD-NBW_BYTE)], expanded_key_ff[NBW_OUT-(i+1)*NBW_KEY+NBW_WORD-1-:NBW_BYTE]};"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "w3",
+    "upstream": "expanded_key_ff slot 2 的低 32 位元(w3)",
+    "arch_connected_to": "key_expand_step.prev_round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1055:1024]",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 100(slot i 的低 32 位元)",
+     "unknown": [
+      "signal 為 expanded_key_ff[1055:1024]"
+     ]
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "rot",
+    "downstream": "steps[2].SubWord 的 sbox 輸入(blk5)",
+    "arch_connected_to": "sub_word.rot",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 100: RotWord = {...}",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 26,
+   "match": 26,
+   "mismatch": 0,
+   "raw": "tool-blk4-check-v0.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 0,
+   "mismatch": 10,
+   "raw": "tool-blk4-check-v0.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "10 個實例 function check 全 match(各 26 列);但輸入皆來自全 0 金鑰衍生值,與 harness 輸入不相等"
+ },
+ "difficulty": {
+  "level": "easy",
+  "reason": "一行位元組旋轉"
+ },
+ "control": {
+  "assessment": "unknown",
+  "items": [
+   {
+    "item": "有效條件/時序(key_cnt 1..10)",
+    "expected": "key_cnt = 1..10 逐列",
+    "observed": "RTL 沒有 key_cnt;10 個 steps[i] 實例每個時脈同時運算(空間展開),expanded_key_ff 每個時脈移位一格;更新啟動從未進入金鑰模組:uu_aes128_key_expansion.i_start 全程 0,key_exp_steps_ff 全程 000,key_done 全程 0",
+    "verdict": "unknown",
+    "evidence": "aes128_key_expansion.sv 73-109 'for(genvar i = 0; i < STEPS; i++) begin : steps'; aes128_key_expansion.sv 111-113 'assign expanded_key_nx = {valid_key , step_key[0], step_key[1], ...'; RUN #17 欄位 key_done=0、uu_aes128_key_expansion.i_start=0、key_exp_steps_ff=000 於所有 26 列"
+   },
+   {
+    "item": "逐實例 function check(補充)",
+    "expected": "與 model 相符",
+    "observed": "steps[0..9]:各 26/26 match",
+    "verdict": "consistent",
+    "evidence": "tool 輸出摘要:blk4_steps[0..9] 皆 (26,26,0)"
+   }
+  ]
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "aligned",
+ "unknown": [
+  "真實金鑰輸入下的行為"
+ ],
+ "no_change": false
+}

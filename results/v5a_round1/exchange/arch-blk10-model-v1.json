@@ -1,0 +1,92 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk10",
+ "name": "inv_shift_rows",
+ "order": 10,
+ "function_text": "model.py:inv_shift_rows(state: 16 bytes) -> out[row r, col c] = in[row r, col (c-r) mod 4]; byte index 4*c + r. Row 0 unchanged. CLI: inv_shift_rows <state 32 hex> -> 32 hex. Example 000102..0f -> 000d0a0704010e0b0805020f0c090603.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.q"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_sub_bytes.state"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_out[r][c]",
+   "type": "combinational",
+   "width": 8,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "state[r][(c - r) mod 4](向右旋 r 格)",
+   "spec_ref": "FIPS 197 Sec 5.3.1"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "inv_shift_rows"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "doubt",
+   "text": "h1(方向相反)有數據支持:tool-blk10-check 的列 255,輸入 byte(row 1)= a1 ad e4 51(n=1,5,9,13),RTL 輸出 ad e4 51 a1(向左旋 1);模型輸出 51 a1 ad e4(向右旋 1);row 3 RTL 輸出為輸入向左旋 3(等於向右旋 1 的反方向),row 0、row 2 不受影響。符合『RTL 做的是前向 ShiftRows』,與反向解密需要的 InvShiftRows(FIPS 197 Sec 5.3.1,向右)不同。我對這一點的信心高(動態值,非單純讀碼),但輸入來自未被接受的 start 的自走資料,所以仍請在被接受的 start 後再確認。",
+   "basis": "hdl_report",
+   "refs": [
+    "tool-blk10-check-v0.json#function_check.raw",
+    "hdl-blk10-rtl-v0.json#h1",
+    "FIPS 197 Sec 5.3.1"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "answer",
+   "replies_to": "q1",
+   "text": "q1:見 blk1 a1,輸入是 MixColumns 的組合輸出而非暫存器 q 是切點平移,可接受;要求的是功能。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk10-rtl-v0.json#q1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "h1",
+   "decision": "model_kept",
+   "reason": "解密需要 InvShiftRows(右旋);RTL 的行為若確是左旋,是 RTL 的問題,不改模型。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3.1"
+   ]
+  }
+ ],
+ "status": "suspect",
+ "no_change": false
+}

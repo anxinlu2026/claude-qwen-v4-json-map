@@ -1,0 +1,134 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk13",
+ "name": "round_mux",
+ "active_when": "TODO",
+ "rtl_map": [
+  {
+   "file": "TODO",
+   "lines": "TODO",
+   "kind": "TODO",
+   "drives": [],
+   "source": "TODO"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "initial_path",
+    "upstream": "TODO",
+    "arch_connected_to": "add_round_key.state_out",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "round_path",
+    "upstream": "TODO",
+    "arch_connected_to": "inv_mix_columns.state_out",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "final_path",
+    "upstream": "TODO",
+    "arch_connected_to": "add_round_key.state_out",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "round_cnt",
+    "upstream": "TODO",
+    "arch_connected_to": "round_counter.round_cnt",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "state_next",
+    "downstream": "TODO",
+    "arch_connected_to": "state_reg.state_next",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {},
+ "confidence": {
+  "level": "TODO",
+  "reason": "TODO"
+ },
+ "difficulty": {
+  "level": "TODO",
+  "reason": "TODO"
+ },
+ "control": {
+  "assessment": "TODO",
+  "items": []
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "TODO",
+ "unknown": [],
+ "no_change": false
+}

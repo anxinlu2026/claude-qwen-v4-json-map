@@ -1,0 +1,61 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk9",
+ "name": "add_round_key",
+ "order": 9,
+ "function_text": "model.py:add_round_key(state: 16 bytes, round_key: 16 bytes) -> byte-wise XOR (byte n with byte n; both row n%4, col n//4). CLI: add_round_key <state 32 hex> <round_key 32 hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.q, inv_sub_bytes.state_out"
+   },
+   {
+    "name": "round_key",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_key_select.round_key"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_mix_columns.state, round_mux.initial_path, round_mux.final_path"
+   }
+  ]
+ },
+ "elements": [],
+ "python": {
+  "module": "model.py",
+  "function": "add_round_key"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "open",
+ "no_change": false
+}

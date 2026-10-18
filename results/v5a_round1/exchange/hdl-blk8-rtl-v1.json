@@ -1,0 +1,168 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 1,
+ "block": "blk8",
+ "name": "round_key_select",
+ "active_when": "round_ff != 0",
+ "rtl_map": [
+  {
+   "file": "aes128_decrypt.sv",
+   "lines": "118-122",
+   "kind": "always_comb",
+   "drives": [
+    "AddRoundKey"
+   ],
+   "source": "119: AddRoundKey[i][j] = current_data_ff[i][j] ^ expanded_key[NBW_EX_KEY-(11-round_ff)*NBW_KEY-(4*i+j)*NBW_BYTE-1-:NBW_BYTE];(選 slot 的邏輯內嵌於此式)"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "rk_all",
+    "upstream": "blk2 rk_all = expanded_key",
+    "arch_connected_to": "round_key_store.rk_all",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.expanded_key",
+     "width": 1408,
+     "kind": "data",
+     "valid_when": "key_done = 1(arch);RTL 無閘控",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 119: expanded_key[...]",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "round_cnt",
+    "upstream": "round_ff",
+    "arch_connected_to": "round_counter.round_cnt",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.round_ff",
+     "width": 4,
+     "kind": "data",
+     "valid_when": "always",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 38: logic [3:0]            round_ff;",
+     "unknown": [
+      "RTL 值域 0..12,架構 1..11"
+     ]
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "round_key",
+    "downstream": "內嵌於 line 119 的 XOR,無獨立訊號",
+    "arch_connected_to": "add_round_key.round_key",
+    "rtl": {
+     "signal": "unknown",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff > 0 (line 118)",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 119: ... expanded_key[NBW_EX_KEY-(11-round_ff)*NBW_KEY-(4*i+j)*NBW_BYTE-1-:NBW_BYTE];",
+     "unknown": [
+      "RTL 沒有可探測的 round_key 訊號,harness 無法執行(block_harness 回傳 'RTL signals missing')"
+     ]
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {},
+ "confidence": {
+  "level": "medium",
+  "reason": "無獨立 round_key 訊號,harness 仍不可執行;間接證據:round 11 以真實 rk0、end-to-end PASS"
+ },
+ "difficulty": {
+  "level": "medium",
+  "reason": "選擇邏輯內嵌在 XOR 式"
+ },
+ "control": {
+  "assessment": "consistent",
+  "items": [
+   {
+    "item": "控制時序(被接受的 start)",
+    "expected": "arch schedule:update 情形 row0 start、row1–10 金鑰展開、row11 key_done=1 且 round=1、round 1..11 於 row 11–21、row 22 o_done=1;no_update 情形 round 1..11 於 row 1–11、row 12 o_done=1",
+    "observed": "RUN #199:t=25 start 被接受;key_done=1 從 t=135(row 11);round_ff 1(等待)…b 於 t=135…235;t=245(row 22)round_ff=0、o_done=1;第二次 start 之後 round 1 於下一列。RUN #236 testbench PASS ×2",
+    "verdict": "consistent",
+    "evidence": "rtl probe RUN #199;RUN #236 'result: PASS (0 FAIL, 2 PASS)'"
+   }
+  ]
+ },
+ "questions": [
+  {
+   "id": "q1",
+   "text": "line 119 把 round key 位元組 4*i+j 配到 state[i][j],而架構是 byte n 配 byte n(row n%4,col n//4,即 4*j+i)。架構的位元組序是否也適用於 round key(slot 內的順序)?",
+   "refs": [
+    "aes128_decrypt.sv:119",
+    "arch-top-model-v0.json#byte_layout"
+   ]
+  }
+ ],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "round key 以轉置序(4*i+j)配到 state[i][j],與輸出的 4*j+i(line 49)不同。",
+   "evidence": "D 119 vs 49;間接推算:slot 9 的 (AddRoundKey ^ current_data_ff) 等於 slot 的轉置序而非架構序。僅 slot 內字不重複(slot 1..9)時可見,中等證據。",
+   "status": "open"
+  },
+  {
+   "id": "h2",
+   "claim": "round_ff 到 12 時,line 119 的 slot 索引 (11-12) 為負。",
+   "evidence": "aes128_decrypt.sv 119 與 RUN #17(t=115 round_ff=c)",
+   "status": "open"
+  }
+ ],
+ "replies": [
+  {
+   "replies_to": "a1",
+   "text": "已修改 round key 位元組序(c1)。"
+  },
+  {
+   "replies_to": "a2",
+   "text": "round_ff=12 在新的控制下不再出現(round 1..11 後回 0,見 hdl-blk13 c1、RUN #199)。"
+  }
+ ],
+ "rtl_changes": [
+  {
+   "id": "c1",
+   "based_on": "a1",
+   "file": "aes128_decrypt.sv",
+   "lines": "119",
+   "before": "AddRoundKey[i][j] = current_data_ff[i][j] ^ expanded_key[NBW_EX_KEY-(11-round_ff)*NBW_KEY-(4*i+j)*NBW_BYTE-1-:NBW_BYTE];",
+   "after": "AddRoundKey[i][j] = current_data_ff[i][j] ^ expanded_key[NBW_EX_KEY-(11-round_ff)*NBW_KEY-(4*j+i)*NBW_BYTE-1-:NBW_BYTE];",
+   "reason": "金鑰 byte n 與狀態 byte n 同位置(架構 blk8 a1,FIPS 197 Sec 5.3.4)",
+   "harness_after": {
+    "function_check": {
+     "match": 0,
+     "mismatch": 0
+    },
+    "input_check": {
+     "match": 0,
+     "mismatch": 0
+    }
+   },
+   "status": "applied"
+  }
+ ],
+ "status": "open",
+ "unknown": [
+  "harness function check(無 round_key 輸出訊號)",
+  "round_ff=12 時被選到的 key 位元",
+  "round_key 無獨立訊號,function check 仍不可執行;間接推算本輪未重做(之後 rtl 工具對所有指令(probe/sim/replace)回 'STOP: the driver of MixColumns was edited 5 times and reverted each time',已用 rtl ask 回報(RUN 之後),等待答覆;因此本輪未能重跑其餘方塊 harness 與 RTL 回歸。)"
+ ],
+ "no_change": false
+}

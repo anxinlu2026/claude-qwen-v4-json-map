@@ -1,0 +1,32 @@
+{
+ "block": "blk4",
+ "name": "rot_word",
+ "round": 1,
+ "time": "2026-10-18 19:01:26",
+ "inputs_in_model_order": [
+  "w3"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1055:1024]"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1055:1024] --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord --model python3 /tmp/ip_work/arch/model_cli.py block rot_word --max 40 --when 1",
+  "rows": 39,
+  "match": 39,
+  "mismatch": 0,
+  "raw": "f67f |                                                                       59f67f73 | 59f67f73 |  match\n225 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n235 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n245 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n255 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n265 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n275 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n285 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n295 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n305 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n315 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n325 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n335 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n345 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n355 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n365 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n375 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\n385 |                                                                           7359f67f |                                                                       59f67f73 | 59f67f73 |  match\nRESULT: 39 of 39 compared row(s) match the model.\nRotWord: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "mismatch_rows_compact": [],
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 1,
+  "not_seen": 9,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "w3": "09cf4f3c"
+   }
+  }
+ }
+}

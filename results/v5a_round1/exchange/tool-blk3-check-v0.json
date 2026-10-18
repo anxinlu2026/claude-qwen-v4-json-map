@@ -1,0 +1,161 @@
+{
+ "block": "blk3",
+ "name": "key_expand_step",
+ "round": 0,
+ "time": "2026-10-18 17:25:15",
+ "inputs_in_model_order": [
+  "prev_round_key",
+  "n"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1151:1024]",
+  "=3"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1151:1024] =3 --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.step_key[2] --model python3 /tmp/ip_work/arch/model_cli.py block key_expand_step --max 40 --when 1",
+  "rows": 26,
+  "match": 2,
+  "mismatch": 24,
+  "raw": "                      9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n125 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n135 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n145 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n155 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n165 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n175 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n185 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n195 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n205 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n215 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n225 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n235 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n245 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\n255 |                                                   9b9898c9f9fbfbaa9b9898c9f9fbfbaa |  3 |                                          f2f45733696ccffa909734500b0fac99 | 90973450696ccffaf2f457330b0fac99 | MISMATCH\nRESULT: 2 of 26 compared row(s) match the model.\nstep_key: recorded as mismatch. With the inputs it actually receives, this block does not give the model's output: the fault is inside it. If it is more than one driver, break it down (blockcheck its parts); at a single driver, fix that driver.\n",
+  "xor_of_rtl_and_model_by_byte": [
+   {
+    "t": 25,
+    "xor_per_byte": [
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00",
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00"
+    ]
+   },
+   {
+    "t": 35,
+    "xor_per_byte": [
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00",
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00"
+    ]
+   },
+   {
+    "t": 45,
+    "xor_per_byte": [
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00",
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00"
+    ]
+   },
+   {
+    "t": 55,
+    "xor_per_byte": [
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00",
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00"
+    ]
+   },
+   {
+    "t": 65,
+    "xor_per_byte": [
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00",
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00"
+    ]
+   },
+   {
+    "t": 75,
+    "xor_per_byte": [
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00",
+     "62",
+     "63",
+     "63",
+     "63",
+     "00",
+     "00",
+     "00",
+     "00"
+    ]
+   }
+  ]
+ },
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 10,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "prev_round_key": "2b7e151628aed2a6abf7158809cf4f3c",
+    "n": 1
+   }
+  }
+ }
+}

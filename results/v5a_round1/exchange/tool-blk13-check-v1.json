@@ -1,0 +1,209 @@
+{
+ "block": "blk13",
+ "name": "round_mux",
+ "round": 1,
+ "time": "2026-10-18 19:01:29",
+ "inputs_in_model_order": [
+  "initial_path",
+  "round_path",
+  "final_path",
+  "round_cnt"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+  "tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3]",
+  "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+  "tb_aes128_dec.uu_aes128_decrypt.round_ff"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3] tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3] tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3] tb_aes128_dec.uu_aes128_decrypt.round_ff --out tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][3] --model python3 /tmp/ip_work/arch/model_cli.py block round_mux --max 40 --when round_ff != 0",
+  "rows": 32,
+  "match": 2,
+  "mismatch": 30,
+  "raw": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         3243f6a8885a308d313198a2e0370734 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                a1ff3b4adbc5bdcc52f38f1461de550e |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                3243f6a8885a308d313198a2e0370734 |                                        b |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      3243f6a8885a308d313198a2e0370734 | 3243f6a8885a308d313198a2e0370734 |    match\nRESULT: 2 of 32 compared row(s) match the model.\ncurrent_data_nx: recorded as mismatch. With the inputs it actually receives, this block does not give the model's output: the fault is inside it. If it is more than one driver, break it down (blockcheck its parts); at a single driver, fix that driver.\n",
+  "xor_of_rtl_and_model_by_byte": [
+   {
+    "t": 35,
+    "xor_per_byte": [
+     "3a",
+     "97",
+     "1a",
+     "93",
+     "da",
+     "6c",
+     "e1",
+     "82",
+     "d9",
+     "f4",
+     "79",
+     "f0",
+     "39",
+     "0f",
+     "82",
+     "e1"
+    ]
+   },
+   {
+    "t": 45,
+    "xor_per_byte": [
+     "0c",
+     "ff",
+     "92",
+     "9e",
+     "3b",
+     "93",
+     "06",
+     "dc",
+     "54",
+     "67",
+     "0a",
+     "db",
+     "40",
+     "68",
+     "fd",
+     "fa"
+    ]
+   },
+   {
+    "t": 55,
+    "xor_per_byte": [
+     "ac",
+     "ba",
+     "32",
+     "dc",
+     "7a",
+     "7b",
+     "4e",
+     "b5",
+     "98",
+     "4e",
+     "6b",
+     "2c",
+     "f5",
+     "74",
+     "ec",
+     "5f"
+    ]
+   },
+   {
+    "t": 65,
+    "xor_per_byte": [
+     "fa",
+     "42",
+     "1f",
+     "3c",
+     "ae",
+     "9f",
+     "50",
+     "a4",
+     "43",
+     "c2",
+     "3a",
+     "01",
+     "58",
+     "10",
+     "06",
+     "20"
+    ]
+   },
+   {
+    "t": 75,
+    "xor_per_byte": [
+     "42",
+     "38",
+     "83",
+     "17",
+     "06",
+     "f6",
+     "55",
+     "cf",
+     "4a",
+     "9c",
+     "a7",
+     "64",
+     "38",
+     "e7",
+     "6f",
+     "a9"
+    ]
+   },
+   {
+    "t": 85,
+    "xor_per_byte": [
+     "f4",
+     "de",
+     "52",
+     "7c",
+     "98",
+     "93",
+     "3e",
+     "27",
+     "58",
+     "7d",
+     "c5",
+     "3a",
+     "d7",
+     "5d",
+     "70",
+     "b3"
+    ]
+   }
+  ]
+ },
+ "mismatch_rows_compact": [
+  {
+   "t": 35,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "03b29e8ed8b0e87905e5fc67206589d3"
+  },
+  {
+   "t": 45,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "35da1683394f0f2788768f4c5902f6c8"
+  },
+  {
+   "t": 55,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "959fb6c178a7474e445feebbec1ee76d"
+  },
+  {
+   "t": 65,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "c3679b21ac43595f9fd3bf96417a0d12"
+  },
+  {
+   "t": 75,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "7b1d070a042a5c34968d22f3218d649b"
+  },
+  {
+   "t": 85,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "cdfbd6619a4f37dc846c40adce377b81"
+  },
+  {
+   "t": 95,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "f9dfbc8393585686467bd8a7432399d8"
+  },
+  {
+   "t": 105,
+   "rtl_out": "3925841d02dc09fbdc118597196a0b32",
+   "model_out": "8dcadfd63c4eebeafff8d45876e513bc"
+  }
+ ],
+ "input_check": {
+  "steps": 11,
+  "steps_whose_inputs_were_seen_in_order": 9,
+  "not_seen": 2,
+  "first_step_not_seen": {
+   "step": 10,
+   "wanted": {
+    "initial_path": "n/a",
+    "round_path": "d4bf5d30e0b452aeb84111f11e2798e5",
+    "final_path": "n/a",
+    "round_cnt": 10
+   }
+  }
+ }
+}

@@ -1,0 +1,149 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk13",
+ "name": "round_mux",
+ "order": 13,
+ "function_text": "model.py:round_step(state, rk, r) selects: r = 1 -> add_round_key(state, rk[10]); r = 2..10 -> inv_mix_columns(add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[11-r])); r = 11 -> add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[0]). CLI (selection only): round_mux <initial_path 32 hex> <round_path 32 hex> <final_path 32 hex> <round_cnt hex> -> the path chosen by round_cnt (1: initial, 2..10: round, 11: final), 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "initial_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   },
+   {
+    "name": "round_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_mix_columns.state_out"
+   },
+   {
+    "name": "final_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   },
+   {
+    "name": "round_cnt",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "always",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_counter.round_cnt"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_next",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.state_next"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_next",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "round_cnt = 1: initial_path(只有 AddRoundKey);2..10: round_path(InvShiftRows->InvSubBytes->AddRoundKey->InvMixColumns);11: final_path(InvShiftRows->InvSubBytes->AddRoundKey)",
+   "spec_ref": "FIPS 197 Sec 5.3"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "round_step"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "answer",
+   "replies_to": "q1",
+   "text": "q1:這個多工是模型的邏輯劃分,不是 RTL 必須有的結構。在 RTL 的串聯鏈裡,function check 不是在每一路輸入上比,而是比『整條鏈』:某拍的鏈入口(暫存器)到下一個暫存器之間,是否等於標準中對應的運算序列。因此 2 match/19 mismatch 的結果不採用,等被接受的 start 後再比較每拍。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk13-rtl-v0.json#q1",
+    "FIPS 197 Sec 5.3"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "answer",
+   "replies_to": "q2",
+   "text": "q2:13 個控制拍數(round_ff 到 12)是否為差異?規格與 TB 不限定拍數(TB 只等 o_done 的上升沿、再讀 o_data,54-57)。額外一拍不是差異;判準是:o_done=1 那一列的 o_data 等於明文。請檢查被接受的 start 後 round_ff=11 與 12 之後 current_data_ff 的值。",
+   "basis": "testbench",
+   "refs": [
+    "verif/tb_aes128_dec.sv:54-57",
+    "hdl-blk13-rtl-v0.json#q2"
+   ]
+  },
+  {
+   "id": "a3",
+   "type": "doubt",
+   "text": "h1(round 1 也經過 InvMixColumns):標準的初始步驟只有 AddRoundKey(Sec 5.3 圖 12)。若成立是偏離。信心中等(靜態);請在被接受的 start 後,看 round_ff=1 那拍進暫存器的值。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk13-rtl-v0.json#h1",
+    "FIPS 197 Sec 5.3"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "q1",
+   "decision": "model_kept",
+   "reason": "切點與多工的形狀不是規格要求。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3"
+   ]
+  },
+  {
+   "id": "d2",
+   "about": "q2",
+   "decision": "model_kept",
+   "reason": "模型拍數是我選的 AA3;RTL 的額外拍不是 TB 的錯誤,以 o_data 為準。",
+   "basis": "testbench",
+   "refs": [
+    "verif/tb_aes128_dec.sv:54-57"
+   ]
+  }
+ ],
+ "status": "open",
+ "no_change": false
+}

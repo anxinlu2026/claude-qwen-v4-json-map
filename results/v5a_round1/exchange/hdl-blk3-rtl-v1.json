@@ -1,0 +1,180 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 1,
+ "block": "blk3",
+ "name": "key_expand_step",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "99-107",
+   "kind": "always_comb",
+   "drives": [
+    "steps[2].RotWord",
+    "steps[2].RconXor",
+    "step_key[2]"
+   ],
+   "source": "103: step_key[i][NBW_KEY-1-:NBW_WORD]            = expanded_key_ff[NBW_OUT-(4*i+3)*NBW_WORD-1-:NBW_WORD] ^ RconXor;"
+  },
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "73-109",
+   "kind": "always_comb",
+   "drives": [
+    "step_key[0..9]"
+   ],
+   "source": "73: for(genvar i = 0; i < STEPS; i++) begin : steps(10 個實例,harness 用 steps[2],其餘見 control 補充)"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "prev_round_key",
+    "upstream": "expanded_key_ff 的 slot 2(steps[2];n=3)",
+    "arch_connected_to": "round_key_store.rk_prev",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1151:1024]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "每個時脈(無閘控)",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 103-106: expanded_key_ff[NBW_OUT-(4*i+k)*NBW_WORD-1-:NBW_WORD]",
+     "unknown": [
+      "signal 為 steps[2] 的 slot 2 切片 expanded_key_ff[1151:1024]"
+     ]
+    }
+   },
+   {
+    "arch_port": "n",
+    "upstream": "steps 的索引 i(常數;n=i+1)",
+    "arch_connected_to": "key_counter.key_cnt",
+    "rtl": {
+     "signal": "=3",
+     "width": 4,
+     "kind": "held",
+     "valid_when": "常數",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 74: for(genvar i = 0; i < STEPS; i++) begin : steps / 101: SubWord...^Rcon[i]",
+     "unknown": [
+      "n 以 harness 常數 =3 代入,RTL 無 n 訊號"
+     ]
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "next_round_key",
+    "downstream": "expanded_key_nx 的 slot 3(steps[2] → 下一格)",
+    "arch_connected_to": "round_key_store.rk_next",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.step_key[2]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 103-106 step_key[i]",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 39,
+   "match": 39,
+   "mismatch": 0,
+   "raw": "tool-blk3-check-v1.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 1,
+   "mismatch": 9,
+   "raw": "tool-blk3-check-v1.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "steps[2] 39/39 match(真實金鑰、被接受的 start);其餘實例未在 v1 重跑(工具鎖定)"
+ },
+ "difficulty": {
+  "level": "medium",
+  "reason": "10 個空間實例,逐實例重複驗證"
+ },
+ "control": {
+  "assessment": "consistent",
+  "items": [
+   {
+    "item": "有效條件/時序",
+    "expected": "key_cnt=1..10 逐列",
+    "observed": "10 個實例同時運算、每拍移位;rk[k] 於 row k+1 有效(key_done 在 row 11);steps[2] 39/39 match",
+    "verdict": "consistent",
+    "evidence": "RUN #199;tool-blk3-check-v1.json"
+   }
+  ]
+ },
+ "questions": [
+  {
+   "id": "q1",
+   "text": "RTL 實際金鑰為全 0(i_update_key 的 start 未被接受),所以 input check 0/10。是否需要在 RTL 能收到 start 之前,以架構的真實金鑰(2b7e…)當 blk3 的輸入來驗證?",
+   "refs": [
+    "arch-blk3-harness-v0.json",
+    "RUN #17"
+   ]
+  }
+ ],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "step_key 的四個字取自上一把金鑰的字序相反(w0' 用 prev w3、w1' 用 prev w2…),而架構 w0' = prev w0 ^ t。",
+   "evidence": "aes128_key_expansion.sv 103: 'expanded_key_ff[NBW_OUT-(4*i+3)*NBW_WORD-1-:NBW_WORD] ^ RconXor' 與 106: 'expanded_key_ff[NBW_OUT-(4*i  )*NBW_WORD-1-:NBW_WORD] ^ step_key[i][NBW_KEY-2*NBW_WORD-1-:NBW_WORD]';steps[2] 實測 RTL 輸出 f2f45733696ccffa909734500b0fac99、model 90973450696ccffaf2f457330b0fac99(tool-blk3-check-v0.json)。證據中等:只在非重複字的 slot 2..9 可見。",
+   "status": "open"
+  }
+ ],
+ "replies": [
+  {
+   "replies_to": "a2",
+   "text": "取字來源見 rtl_changes c1 的 before/after;原始碼把輸出字 0 與輸入字 3 配對(第 103 行 4*i+3),輸出字 3 與輸入字 0 配對;你指出『字 0 與字 2 互換』的列來自週期輸入,與完全反序不符,我同意先前 h1 的說法過度簡化。"
+  }
+ ],
+ "rtl_changes": [
+  {
+   "id": "c1",
+   "based_on": "a2",
+   "file": "aes128_key_expansion.sv",
+   "lines": "103-106",
+   "before": "step_key 的四個字依序取 expanded_key_ff 的字 4*i+3、4*i+2、4*i+1、4*i",
+   "after": "依序取字 4*i、4*i+1、4*i+2、4*i+3(w0'=prev w0^RconXor、w1'=prev w1^w0'、w2'=prev w2^w1'、w3'=prev w3^w2')",
+   "reason": "FIPS 197 Sec 5.2 的字鏈接;修改前 steps[2] 在被接受的 start 後 37/39 列 mismatch(xor 型態 62 63 63 63 00 ..),修改後 39/39 match",
+   "harness_after": {
+    "function_check": {
+     "match": 39,
+     "mismatch": 0
+    },
+    "input_check": {
+     "match": 1,
+     "mismatch": 9
+    }
+   },
+   "status": "applied"
+  }
+ ],
+ "status": "aligned",
+ "unknown": [
+  "steps[2] 以外的實例本輪未重跑(v0 補充程序已證實 steps[0..9] 的 block 4/5/6 一致;3/7 於 v0 因字序在 steps[2..9] mismatch,修改後只重跑 steps[2])"
+ ],
+ "no_change": false
+}

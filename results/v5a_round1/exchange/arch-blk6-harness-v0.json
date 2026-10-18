@@ -1,0 +1,127 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk6",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 1,
+   "model_condition": "key expansion step n=1",
+   "inputs": {
+    "sub": "8a84eb01",
+    "n": 1
+   },
+   "outputs": {
+    "t": "8b84eb01"
+   }
+  },
+  {
+   "step": 2,
+   "model_condition": "key expansion step n=2",
+   "inputs": {
+    "sub": "50386be5",
+    "n": 2
+   },
+   "outputs": {
+    "t": "52386be5"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "key expansion step n=3",
+   "inputs": {
+    "sub": "cb42d28f",
+    "n": 3
+   },
+   "outputs": {
+    "t": "cf42d28f"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "key expansion step n=4",
+   "inputs": {
+    "sub": "dac4e23c",
+    "n": 4
+   },
+   "outputs": {
+    "t": "d2c4e23c"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "key expansion step n=5",
+   "inputs": {
+    "sub": "2b9563b9",
+    "n": 5
+   },
+   "outputs": {
+    "t": "3b9563b9"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "key expansion step n=6",
+   "inputs": {
+    "sub": "99596582",
+    "n": 6
+   },
+   "outputs": {
+    "t": "b9596582"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "key expansion step n=7",
+   "inputs": {
+    "sub": "63dc5474",
+    "n": 7
+   },
+   "outputs": {
+    "t": "23dc5474"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "key expansion step n=8",
+   "inputs": {
+    "sub": "2486842f",
+    "n": 8
+   },
+   "outputs": {
+    "t": "a486842f"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "key expansion step n=9",
+   "inputs": {
+    "sub": "5da515d2",
+    "n": 9
+   },
+   "outputs": {
+    "t": "46a515d2"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "key expansion step n=10",
+   "inputs": {
+    "sub": "4a639f5b",
+    "n": 10
+   },
+   "outputs": {
+    "t": "7c639f5b"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "always",
+   "type": "combinational"
+  }
+ ],
+ "register_expected": []
+}

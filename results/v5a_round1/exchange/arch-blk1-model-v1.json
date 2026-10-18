@@ -1,0 +1,138 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk1",
+ "name": "state_reg",
+ "order": 1,
+ "function_text": "model.py:Top.state (16 bytes). Per edge: load_sel -> load_block output; else round_cnt != 0 -> round_step(...) = state_next; else hold. Reset 0. Not a pure function; no CLI.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state_in",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0 only",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "load_block.state_in"
+   },
+   {
+    "name": "state_next",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "rows with round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_mux.state_next"
+   },
+   {
+    "name": "load_sel",
+    "width": 1,
+    "kind": "one-cycle pulse",
+    "valid_when": "row 0",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_counter.start_accept"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "q",
+    "width": 128,
+    "kind": "held",
+    "valid_when": "row 1 onward; plaintext when o_done = 1",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 1,
+    "latency_max_cycles": 1,
+    "connected_to": "add_round_key.state, inv_shift_rows.state, output_map.q"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state[r][c]",
+   "type": "register",
+   "width": 8,
+   "reset_value": "0",
+   "updates_when": "clk 上升沿",
+   "next_value": "load_sel(start 被接受,即 i_start=1 且閒置) -> state_in;否則 round_cnt != 0 -> state_next;否則保持",
+   "spec_ref": "task prompt; AA7, AA8"
+  },
+  {
+   "name": "o_data (相同位元)",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "0",
+   "updates_when": "always",
+   "next_value": "state 的位元組 n(row n%4, col n//4)放在 o_data[127-8n -: 8],見 blk14",
+   "spec_ref": "verif/tb_aes128_dec.sv:55-57"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "Top.state"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "answer",
+   "replies_to": "q1",
+   "text": "q1:規格和 TB 沒有規定內部暫存器放在哪一格(只規定 start 取樣當拍鎖住 i_data、o_done 那一列的 o_data 是明文;TB 54-57)。模型的切點是我選的(AA2、AA3),不是規格要求,所以 harness 的 state_next 逐步值『不必』出現在 RTL 的某個訊號上。模型保留。標準(FIPS 197 Sec 5.3,圖 12)規定的是運算順序:初始只有 AddRoundKey(rk[10]),之後每回合 InvShiftRows、InvSubBytes、AddRoundKey、InvMixColumns,最後一回合沒有 InvMixColumns。若 RTL 把同一個序列在時間上平移(每拍的鏈由 AddRoundKey 開始、InvSubBytes 結束),整體仍可成立;請用各運算自己的 function check(以 RTL 自己的輸入)比,不要要求 state_reg 的 q 逐步相等。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3",
+    "verif/tb_aes128_dec.sv:54-57",
+    "hdl-blk1-rtl-v0.json#q1"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "doubt",
+   "text": "如果平移成立,第一拍(HDL 看到的 round_ff=1)只能做 AddRoundKey(rk[10]),不可以再套 InvMixColumns/InvShiftRows/InvSubBytes 的結果(標準的初始步驟沒有它們)。HDL 在 blk13 h1 說 RTL 在 round_ff=1 的鏈包含 InvMixColumns。請檢查在被接受的 start 之後,round_ff=1 那一拍存進暫存器的值,與下面兩個候選哪一個相等,或都不等:(甲)ct 與 rk[10] 的 XOR(arch-blk1-harness-v1.json 的 register_expected,no_update 的 row 2);(乙)甲再經過 InvShiftRows 與 InvSubBytes(用 blk10、blk11 的模型函式算)。我不預設結論。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3",
+    "hdl-blk13-rtl-v0.json#h1",
+    "arch-blk1-harness-v1.json#register_expected"
+   ]
+  },
+  {
+   "id": "a3",
+   "type": "suggestion",
+   "text": "state 暫存器的 load_sel 與 state_in 在 RTL 沒有獨立訊號是可接受的(接線與條件合併);請在 JSON 說明合併後的條件與來源行即可。harness 的 function check 對這個方塊 0 列是因為 model.py 沒有它的 CLI;這個方塊的檢查改為暫存器的值序列(harness-v1 的 register_expected),請檢查在被接受的 start 後這些列是否一致,允許切點平移並說明對應。",
+   "basis": "hdl_report",
+   "refs": [
+    "hdl-blk1-rtl-v0.json#unknown",
+    "arch-blk1-harness-v1.json"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "q1",
+   "decision": "model_kept",
+   "reason": "內部切點不是規格或 TB 的要求;模型串已通過 TB 期望值。要比的是各運算本身與端到端結果。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3",
+    "verif/tb_aes128_dec.sv:54-57"
+   ]
+  }
+ ],
+ "status": "open",
+ "no_change": false
+}

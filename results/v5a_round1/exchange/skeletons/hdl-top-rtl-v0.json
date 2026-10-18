@@ -1,0 +1,26 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "top",
+ "module": "TODO",
+ "ports": [
+  {
+   "name": "TODO",
+   "dir": "TODO",
+   "width": "TODO",
+   "kind": "TODO",
+   "clock": "TODO",
+   "edge": "TODO",
+   "reset": "TODO",
+   "source": "TODO"
+  }
+ ],
+ "hierarchy": [],
+ "control_registers": [],
+ "testbench_timeline": {
+  "raw": "TODO",
+  "source": "TODO"
+ },
+ "unknown": []
+}

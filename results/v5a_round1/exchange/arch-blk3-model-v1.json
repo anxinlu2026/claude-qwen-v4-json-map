@@ -1,0 +1,113 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk3",
+ "name": "key_expand_step",
+ "order": 3,
+ "function_text": "model.py:next_round_key(prev: 16 bytes, n: 1..10) -> 16 bytes. t = RconXor(SubWord(RotWord(prev[12:16])), n); w0 = prev[0:4]^t; w1 = prev[4:8]^w0; w2 = prev[8:12]^w1; w3 = prev[12:16]^w2; output w0||w1||w2||w3, each word byte 0 first. CLI: key_expand_step <prev_round_key 32 hex> <n hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "prev_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_key_store.rk_prev"
+   },
+   {
+    "name": "n",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_counter.key_cnt"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "next_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_key_store.rk_next"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "next_round_key (w0'..w3')",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "w0' = w0 ^ t; w1' = w1 ^ w0'; w2' = w2 ^ w1'; w3' = w3 ^ w2'; t = Rcon(n) ^ SubWord(RotWord(w3))",
+   "spec_ref": "FIPS 197 Sec 5.2"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "next_round_key"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "answer",
+   "replies_to": "q1",
+   "text": "q1:是,需要。請在有被接受的 start 後再比,或用你自己的激勵把真實金鑰餵進去;目前的輸入是週期性的(w0=w2、w1=w3),看不出字序。",
+   "basis": "testbench",
+   "refs": [
+    "hdl-blk3-rtl-v0.json#q1",
+    "tool-blk3-check-v0.json"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "doubt",
+   "text": "h1(字序相反):tool-blk3-check 的原始列顯示,在 prev=9b9898c9 f9fbfbaa 9b9898c9 f9fbfbaa、n=3 的列,模型輸出 f2f45733 696ccffa 90973450 0b0fac99,RTL 輸出 90973450 696ccffa f2f45733 0b0fac99,也就是字 0 與字 2 互換,字 1、字 3 相同。完全反序應是 0b0fac99 90973450 696ccffa f2f45733,不符。我對原因沒有結論;因為這一列的輸入是週期性的,多種對應都會給出這個結果。請檢查 RTL 的『每個輸出字』分別取哪個輸入字與哪個 XOR 項,並用非週期性的輸入(真實金鑰展開)確認。",
+   "basis": "hdl_report",
+   "refs": [
+    "tool-blk3-check-v0.json#function_check.raw",
+    "hdl-blk3-rtl-v0.json#h1"
+   ]
+  },
+  {
+   "id": "a3",
+   "type": "hypothesis",
+   "text": "H_arch_3:blk3 與 blk7 的 mismatch 同源(blk4/5/6 全 match,mismatch 出現在 XOR 鏈)。與 HDL 的 blk7 h1 一致,不另加。",
+   "basis": "hdl_report",
+   "refs": [
+    "hdl-blk7-rtl-v0.json#h1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "h1",
+   "decision": "model_kept",
+   "reason": "FIPS 197 Sec 5.2:w[i] = w[i-4] ^ temp,w[i-1] 逐字鏈接;模型串以此通過 TB 期望值(2b7e… -> 明文)。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.2"
+   ]
+  }
+ ],
+ "status": "suspect",
+ "no_change": false
+}

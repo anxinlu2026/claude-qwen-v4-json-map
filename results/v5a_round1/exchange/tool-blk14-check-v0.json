@@ -1,0 +1,31 @@
+{
+ "block": "blk14",
+ "name": "output_map",
+ "round": 0,
+ "time": "2026-10-18 17:25:19",
+ "inputs_in_model_order": [
+  "q"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][3]"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][3] --out tb_aes128_dec.uu_aes128_decrypt.o_data --model python3 /tmp/ip_work/arch/model_cli.py block output_map --max 40 --when 1",
+  "rows": 26,
+  "match": 26,
+  "mismatch": 0,
+  "raw": "                                                                                                                                                                                                                                                                                                                                          78cf7526a736f6c8ccc176156bcb41dd |             78cf7526a736f6c8ccc176156bcb41dd | 78cf7526a736f6c8ccc176156bcb41dd |  match\n235 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                78cf7526a736f6c8ccc176156bcb41dd |             78cf7526a736f6c8ccc176156bcb41dd | 78cf7526a736f6c8ccc176156bcb41dd |  match\n245 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                00000000000000970000000000000000 |             00000000000000970000000000000000 | 00000000000000970000000000000000 |  match\n255 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                00000000000000970000000000000000 |             00000000000000970000000000000000 | 00000000000000970000000000000000 |  match\nRESULT: 26 of 26 compared row(s) match the model.\no_data: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "input_check": {
+  "steps": 1,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 1,
+  "first_step_not_seen": {
+   "step": 12,
+   "wanted": {
+    "q": "3243f6a8885a308d313198a2e0370734"
+   }
+  }
+ }
+}

@@ -1,0 +1,35 @@
+{
+ "block": "blk7",
+ "name": "word_xor_chain",
+ "round": 1,
+ "time": "2026-10-18 19:01:26",
+ "inputs_in_model_order": [
+  "prev_round_key",
+  "t"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1151:1024]",
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1151:1024] tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.step_key[2] --model python3 /tmp/ip_work/arch/model_cli.py block word_xor_chain --max 40 --when 1",
+  "rows": 39,
+  "match": 39,
+  "mismatch": 0,
+  "raw": "935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n285 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n295 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n305 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n315 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n325 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n335 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n345 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n355 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n365 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n375 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\n385 |                                                   f2c295f27a96b9435935807a7359f67f |                                                                 cf42d28f |                                          3d80477d4716fe3e1e237e446d7a883b | 3d80477d4716fe3e1e237e446d7a883b |  match\nRESULT: 39 of 39 compared row(s) match the model.\nstep_key: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "mismatch_rows_compact": [],
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 1,
+  "not_seen": 9,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "prev_round_key": "2b7e151628aed2a6abf7158809cf4f3c",
+    "t": "8b84eb01"
+   }
+  }
+ }
+}

@@ -1,0 +1,49 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk11",
+ "name": "inv_sub_bytes",
+ "order": 11,
+ "function_text": "model.py:inv_sub_bytes(state: 16 bytes) -> inverse S-box per byte (position unchanged). CLI: inv_sub_bytes <state 32 hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_shift_rows.state_out"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state"
+   }
+  ]
+ },
+ "elements": [],
+ "python": {
+  "module": "model.py",
+  "function": "inv_sub_bytes"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "open",
+ "no_change": false
+}

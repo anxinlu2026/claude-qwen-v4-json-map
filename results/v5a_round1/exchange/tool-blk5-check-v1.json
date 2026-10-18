@@ -1,0 +1,32 @@
+{
+ "block": "blk5",
+ "name": "sub_word",
+ "round": 1,
+ "time": "2026-10-18 19:01:26",
+ "inputs_in_model_order": [
+  "rot"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord --model python3 /tmp/ip_work/arch/model_cli.py block sub_word --max 40 --when 1",
+  "rows": 39,
+  "match": 39,
+  "mismatch": 0,
+  "raw": "                                                                   cb42d28f | cb42d28f |  match\n215 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n225 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n235 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n245 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n255 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n265 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n275 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n285 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n295 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n305 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n315 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n325 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n335 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n345 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n355 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n365 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n375 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\n385 |                                                                 59f67f73 |                                                                       cb42d28f | cb42d28f |  match\nRESULT: 39 of 39 compared row(s) match the model.\nSubWord: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "mismatch_rows_compact": [],
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 1,
+  "not_seen": 9,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "rot": "cf4f3c09"
+   }
+  }
+ }
+}

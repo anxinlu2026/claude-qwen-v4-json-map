@@ -1,0 +1,1190 @@
+{
+ "design": "aes128_decrypt",
+ "parameters": {
+  "NBW_KEY": 128,
+  "NBW_DATA": 128
+ },
+ "source_note": "Written from the task text, tb_aes128_dec.sv, test_aes128_decrypt.py, FIPS 197 and the library model; RTL not read. Items marked AAn are in assumptions_arch.json.",
+ "byte_layout": "128-bit value: byte n = bits[127-8n : 120-8n]; state row = n%4, column = n//4; round key word j = bytes 4j..4j+3. Verified by the testbench vector (key 2b7e..., ct 3925..., pt 3243...).",
+ "interface": [
+  {
+   "name": "clk",
+   "dir": "in",
+   "width": 1,
+   "role": "clock",
+   "edge": "pos",
+   "function": "Clock; all registers change on the rising edge. TB period 10 time units (clk toggles every 5)."
+  },
+  {
+   "name": "rst_async_n",
+   "dir": "in",
+   "width": 1,
+   "role": "reset",
+   "level": "low",
+   "sync": "asynchronous",
+   "timing": "TB: low for 2 time units at start; cocotb: low for one clock, then high. Asserting it clears every register.",
+   "function": "Asynchronous active-low reset: idle, counters 0, key_done 0, state 0 so o_data = 0, o_done = 0 (AA6)."
+  },
+  {
+   "name": "i_update_key",
+   "dir": "in",
+   "width": 1,
+   "role": "control",
+   "level": "high",
+   "timing": "level; only looked at in the row where i_start = 1; TB and cocotb drive it 0 in all later rows, so it must not be sampled again after the start row (AA10)",
+   "function": "1 together with i_start: take i_key as the new cipher key, expand it first (10 clocks), then decrypt. 0 together with i_start: reuse the stored expanded key."
+  },
+  {
+   "name": "i_key",
+   "dir": "in",
+   "width": 128,
+   "role": "data",
+   "layout": "byte 0 = bits[127:120] = first key byte (W[0] = bits[127:96]); FIPS 197 order",
+   "timing": "valid only in the start row (TB/cocotb set it to 0 right after); must be captured at the start edge when i_update_key = 1; ignored otherwise",
+   "function": "128-bit cipher key."
+  },
+  {
+   "name": "i_start",
+   "dir": "in",
+   "width": 1,
+   "role": "control",
+   "level": "high",
+   "timing": "one-cycle pulse (TB: set at negedge, cleared at next negedge = sampled at exactly one rising edge; cocotb: one clock); sampled at the rising edge; ignored while busy (AA7)",
+   "function": "Starts one decryption of the block on i_data."
+  },
+  {
+   "name": "i_data",
+   "dir": "in",
+   "width": 128,
+   "role": "data",
+   "layout": "byte n = bits[127-8n:120-8n] = state row n%4, column n//4 (TB comment: 39 25 84 1d is column 0)",
+   "timing": "valid only in the start row; TB/cocotb set it to 0 right after; must be latched at the start edge (AA8)",
+   "function": "128-bit ciphertext block."
+  },
+  {
+   "name": "o_done",
+   "dir": "out",
+   "width": 1,
+   "role": "control",
+   "level": "high",
+   "registered": true,
+   "timing": "0 in the row after the start row (a stale 1 would make the cocotb loop compare too early); then 1 for exactly one row when o_data holds the plaintext; 0 again (AA4). The TB waits for a rising edge of o_done, so it must be 0 before the pulse.",
+   "function": "Result valid."
+  },
+  {
+   "name": "o_data",
+   "dir": "out",
+   "width": 128,
+   "role": "data",
+   "registered": true,
+   "layout": "same byte order as i_data",
+   "timing": "correct plaintext in the row where o_done = 1 (TB reads it at the negedge inside that row; cocotb reads it in the row it sees o_done = 1); after reset 0 (AA5, AA6); value in other rows not specified (AA5)",
+   "function": "128-bit plaintext block."
+  }
+ ],
+ "blocks": [
+  {
+   "id": "load_block",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "i_data",
+     "width": 128,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_in",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always (captured into state_reg at the start edge)"
+   },
+   "python": "model.py:load_block",
+   "function": "Maps port i_data to the 4x4 state: byte n = i_data[127-8n -: 8], row n%4, column n//4. Pure wiring."
+  },
+  {
+   "id": "state_reg",
+   "kind": "register",
+   "inputs": [
+    {
+     "name": "state_in",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    },
+    {
+     "name": "state_next",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "q",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "q holds: ciphertext after start edge; then result of the previous step; plaintext after round 11"
+   },
+   "python": "model.py:Top.state",
+   "function": "128-bit state. Loads i_data at the start edge (idle & i_start); holds during key expansion (key_cnt != 0); updates once per clock while round_cnt = 1..11; holds when idle. Reset 0.",
+   "load_when": "idle & i_start",
+   "hold_when": "key expansion or idle (no start)"
+  },
+  {
+   "id": "round_key_store",
+   "kind": "register",
+   "inputs": [
+    {
+     "name": "rk0_in",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    },
+    {
+     "name": "rk_next",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    },
+    {
+     "name": "key_idx",
+     "width": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "rk[0..10]",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "rk[0] valid from the start edge of an update; rk[n] valid from the end of key step n; all 11 valid when key_done = 1"
+   },
+   "python": "model.py:Top.rk",
+   "function": "11 x 128-bit expanded key, kept across operations (stored key reused when i_update_key = 0). rk[0] <= i_key at the start edge when i_update_key = 1; rk[n] <= next_round_key(rk[n-1], n) in key step n (n = 1..10)."
+  },
+  {
+   "id": "key_expand_step",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "prev_round_key",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    },
+    {
+     "name": "n",
+     "width": 4,
+     "note": "1..10 = key_cnt"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "next_round_key",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "key_cnt = 1..10"
+   },
+   "python": "model.py:next_round_key",
+   "function": "One step of the key schedule: round key n-1 -> n. t = Rcon(n) xor' SubWord(RotWord(w3)); w0' = w0^t; w1' = w1^w0'; w2' = w2^w1'; w3' = w3^w2'. (Equivalent to W[i] rules of the spec for i = 4n..4n+3.)",
+   "sub_blocks": [
+    "rot_word",
+    "sub_word",
+    "rcon_step",
+    "word_xor_chain"
+   ]
+  },
+  {
+   "id": "rot_word",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "w3",
+     "width": 32,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "rot",
+     "width": 32,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:rot_word",
+   "function": "[b0,b1,b2,b3] -> [b1,b2,b3,b0] (one byte left rotation)."
+  },
+  {
+   "id": "sub_word",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "rot",
+     "width": 32,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "sub",
+     "width": 32,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:sub_word",
+   "function": "Apply the forward S-box to each byte (module sbox, already tested per the task text)."
+  },
+  {
+   "id": "rcon_step",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "sub",
+     "width": 32,
+     "layout": "byte 0 = MSB"
+    },
+    {
+     "name": "n",
+     "width": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "t",
+     "width": 32,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:rcon_xor",
+   "function": "XOR Rcon[n] into byte 0 (the most significant byte) of the word. Rcon[1..10] = 01 02 04 08 10 20 40 80 1b 36 (already tested per the task text)."
+  },
+  {
+   "id": "word_xor_chain",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "prev_round_key",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    },
+    {
+     "name": "t",
+     "width": 32,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "next_round_key",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "always"
+   },
+   "python": "model.py:next_round_key",
+   "function": "w0' = w0^t, w1' = w1^w0', w2' = w2^w1', w3' = w3^w2' (serial XOR chain across the four words)."
+  },
+  {
+   "id": "round_key_select",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "rk[0..10]",
+     "width": 1408
+    },
+    {
+     "name": "round_cnt",
+     "width": 4
+    }
+   ],
+   "outputs": [
+    {
+     "name": "round_key",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 1..11"
+   },
+   "python": "model.py:Top.step (index 11 - round_cnt, initial step uses 10)",
+   "function": "Decryption uses round keys in reverse: round_cnt 1 -> rk[10]; round_cnt r = 2..10 -> rk[11-r] (9..1); round_cnt 11 -> rk[0]. Note rounds 1..10 of the spec = round_cnt 2..11."
+  },
+  {
+   "id": "add_round_key",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    },
+    {
+     "name": "round_key",
+     "width": 128,
+     "layout": "word j = bytes 4j..4j+3 = column j; word 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 1..11"
+   },
+   "python": "model.py:add_round_key",
+   "function": "Byte-wise XOR of state and round key (same byte layout)."
+  },
+  {
+   "id": "inv_shift_rows",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 2..11"
+   },
+   "python": "model.py:inv_shift_rows",
+   "function": "Row r rotated right by r columns: out[r][c] = in[r][(c - r) mod 4]. Row 0 unchanged. Not used in round_cnt 1 (initial AddRoundKey)."
+  },
+  {
+   "id": "inv_sub_bytes",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 2..11"
+   },
+   "python": "model.py:inv_sub_bytes",
+   "function": "Inverse S-box on each of the 16 bytes (module inv_sbox, already tested)."
+  },
+  {
+   "id": "inv_mix_columns",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "state",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_out",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt = 2..10 only (bypassed in round_cnt 11)"
+   },
+   "python": "model.py:inv_mix_columns",
+   "function": "Each column multiplied by the circulant matrix [0E 0B 0D 09; 09 0E 0B 0D; 0D 09 0E 0B; 0B 0D 09 0E] in GF(2^8), polynomial 0x11B. Output after AddRoundKey (order InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns)."
+  },
+  {
+   "id": "round_mux",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "initial_path",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    },
+    {
+     "name": "round_path",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    },
+    {
+     "name": "final_path",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "state_next",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational",
+    "valid_when": "round_cnt != 0"
+   },
+   "python": "model.py:Top.step",
+   "function": "Selects state_next: round_cnt 1 -> ARK(state, rk[10]) (no shift/sub/mix); round_cnt 2..10 -> InvMixColumns(ARK(InvSub(InvShift(state)), key)); round_cnt 11 -> ARK(InvSub(InvShift(state)), rk[0]) (no InvMixColumns)."
+  },
+  {
+   "id": "output_map",
+   "kind": "datapath",
+   "inputs": [
+    {
+     "name": "q",
+     "width": 128,
+     "layout": "byte n = row n%4, col n//4; byte 0 = MSB"
+    }
+   ],
+   "outputs": [
+    {
+     "name": "o_data",
+     "width": 128,
+     "layout": "byte 0 = MSB"
+    }
+   ],
+   "timing": {
+    "type": "combinational (wiring)",
+    "valid_when": "o_done = 1"
+   },
+   "python": "model.py:output_map",
+   "function": "o_data = state_reg.q, byte n -> o_data[127-8n -: 8]. Inverse of load_block. No extra register (AA5)."
+  },
+  {
+   "id": "key_counter",
+   "kind": "control",
+   "inputs": [
+    {
+     "name": "start&update",
+     "width": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "key_cnt",
+     "width": 4
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "always"
+   },
+   "python": "model.py:Top.key_cnt",
+   "function": "0 = no key expansion running; start edge with i_update_key -> 1; counts 1..10 one per clock; after the clock with key_cnt = 10 returns to 0 and key_done becomes 1."
+  },
+  {
+   "id": "round_counter",
+   "kind": "control",
+   "inputs": [
+    {
+     "name": "start",
+     "width": 1
+    },
+    {
+     "name": "key_cnt_last",
+     "width": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "round_cnt",
+     "width": 4
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "always"
+   },
+   "python": "model.py:Top.round_cnt",
+   "function": "0 = idle; set to 1 at the start edge if no key update, or at the end of key step 10 if key update; counts 1..11 one per clock; returns to 0 after the clock with 11."
+  },
+  {
+   "id": "done_gen",
+   "kind": "control",
+   "inputs": [
+    {
+     "name": "round_cnt_eq_11",
+     "width": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "o_done",
+     "width": 1
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "always"
+   },
+   "python": "model.py:Top.done",
+   "function": "o_done <= 1 at the edge that ends round_cnt = 11, else 0. One-cycle pulse (AA4)."
+  },
+  {
+   "id": "key_done_flag",
+   "kind": "control",
+   "inputs": [
+    {
+     "name": "start&update",
+     "width": 1
+    },
+    {
+     "name": "key_cnt_eq_10",
+     "width": 1
+    }
+   ],
+   "outputs": [
+    {
+     "name": "key_done",
+     "width": 1
+    }
+   ],
+   "timing": {
+    "type": "registered",
+    "valid_when": "always"
+   },
+   "python": "model.py:Top.key_done",
+   "function": "0 after reset and from the start edge of an update; 1 from the end of key step 10. Stays 1 across operations without update. Internal; not a port; the name is the architect's (AA12)."
+  }
+ ],
+ "edges": [
+  {
+   "from": "i_data",
+   "to": "load_block.i_data"
+  },
+  {
+   "from": "load_block.state_in",
+   "to": "state_reg.state_in"
+  },
+  {
+   "from": "state_reg.q",
+   "to": "output_map.q"
+  },
+  {
+   "from": "output_map.o_data",
+   "to": "o_data"
+  },
+  {
+   "from": "state_reg.q",
+   "to": "add_round_key.state [initial: round_cnt 1]"
+  },
+  {
+   "from": "state_reg.q",
+   "to": "inv_shift_rows.state"
+  },
+  {
+   "from": "inv_shift_rows.state_out",
+   "to": "inv_sub_bytes.state"
+  },
+  {
+   "from": "inv_sub_bytes.state_out",
+   "to": "add_round_key.state [rounds]"
+  },
+  {
+   "from": "round_key_select.round_key",
+   "to": "add_round_key.round_key"
+  },
+  {
+   "from": "add_round_key.state_out",
+   "to": "inv_mix_columns.state [round_cnt 2..10]"
+  },
+  {
+   "from": "add_round_key.state_out",
+   "to": "round_mux (initial_path round_cnt 1 / final_path round_cnt 11)"
+  },
+  {
+   "from": "inv_mix_columns.state_out",
+   "to": "round_mux.round_path"
+  },
+  {
+   "from": "round_mux.state_next",
+   "to": "state_reg.state_next"
+  },
+  {
+   "from": "i_key",
+   "to": "round_key_store.rk0_in [start & update]"
+  },
+  {
+   "from": "round_key_store.rk[n-1]",
+   "to": "key_expand_step.prev_round_key"
+  },
+  {
+   "from": "key_counter.key_cnt",
+   "to": "key_expand_step.n"
+  },
+  {
+   "from": "key_counter.key_cnt",
+   "to": "round_key_store.key_idx"
+  },
+  {
+   "from": "key_expand_step.next_round_key",
+   "to": "round_key_store.rk_next"
+  },
+  {
+   "from": "key_expand_step.prev_round_key.w3",
+   "to": "rot_word.w3"
+  },
+  {
+   "from": "rot_word.rot",
+   "to": "sub_word.rot"
+  },
+  {
+   "from": "sub_word.sub",
+   "to": "rcon_step.sub"
+  },
+  {
+   "from": "rcon_step.t",
+   "to": "word_xor_chain.t"
+  },
+  {
+   "from": "round_key_store.rk[0..10]",
+   "to": "round_key_select"
+  },
+  {
+   "from": "round_counter.round_cnt",
+   "to": "round_key_select.round_cnt"
+  },
+  {
+   "from": "round_counter.round_cnt",
+   "to": "round_mux"
+  },
+  {
+   "from": "round_counter.round_cnt",
+   "to": "done_gen"
+  },
+  {
+   "from": "i_start & i_update_key",
+   "to": "key_counter"
+  },
+  {
+   "from": "i_start & !i_update_key",
+   "to": "round_counter"
+  },
+  {
+   "from": "key_counter (key_cnt = 10)",
+   "to": "round_counter"
+  },
+  {
+   "from": "key_counter (key_cnt = 10)",
+   "to": "key_done_flag"
+  },
+  {
+   "from": "done_gen.o_done",
+   "to": "o_done"
+  }
+ ],
+ "control": {
+  "idle_definition": "key_cnt = 0 and round_cnt = 0. A start is accepted only when idle (also in the row where o_done = 1) (AA7).",
+  "state_variables": {
+   "key_cnt": "0, 1..10; step counter of the key expansion; value n = the clock in which round key n is computed and stored",
+   "round_cnt": "0 idle, 1..11; value r = the clock in which step r of the table below is applied",
+   "key_done": "1 when the stored expanded key is valid",
+   "o_done": "registered one-cycle pulse"
+  },
+  "events": [
+   {
+    "name": "reset",
+    "when": "rst_async_n = 0",
+    "effect": "key_cnt = round_cnt = 0; key_done = 0; o_done = 0; state_reg = 0; rk stores 0 (AA6)"
+   },
+   {
+    "name": "start_with_update",
+    "when": "idle & i_start & i_update_key",
+    "effect": "state_reg <= i_data; rk[0] <= i_key; key_done <= 0; key_cnt <= 1 (round_cnt stays 0)"
+   },
+   {
+    "name": "start_without_update",
+    "when": "idle & i_start & !i_update_key",
+    "effect": "state_reg <= i_data; rk unchanged; round_cnt <= 1"
+   },
+   {
+    "name": "key_step",
+    "when": "key_cnt = n, n = 1..9",
+    "effect": "rk[n] <= next_round_key(rk[n-1], n); key_cnt <= n+1; state_reg holds"
+   },
+   {
+    "name": "key_step_last",
+    "when": "key_cnt = 10",
+    "effect": "rk[10] <= next_round_key(rk[9], 10); key_cnt <= 0; key_done <= 1; round_cnt <= 1"
+   },
+   {
+    "name": "round_step",
+    "when": "round_cnt = r, r = 1..10",
+    "effect": "state_reg <= step(r) per round_table; round_cnt <= r+1"
+   },
+   {
+    "name": "round_last",
+    "when": "round_cnt = 11",
+    "effect": "state_reg <= final round result; round_cnt <= 0; o_done <= 1 (for the next row only)"
+   },
+   {
+    "name": "done_clear",
+    "when": "o_done = 1",
+    "effect": "o_done <= 0 at the next edge (pulse); state_reg keeps the plaintext until the next start"
+   }
+  ],
+  "round_table": [
+   {
+    "round_cnt": 1,
+    "spec_step": "initial AddRoundKey",
+    "key": "rk[10]",
+    "ops": "ARK"
+   },
+   {
+    "round_cnt": 2,
+    "spec_step": "decryption round 1 of 10",
+    "key": "rk[9]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 3,
+    "spec_step": "decryption round 2 of 10",
+    "key": "rk[8]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 4,
+    "spec_step": "decryption round 3 of 10",
+    "key": "rk[7]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 5,
+    "spec_step": "decryption round 4 of 10",
+    "key": "rk[6]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 6,
+    "spec_step": "decryption round 5 of 10",
+    "key": "rk[5]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 7,
+    "spec_step": "decryption round 6 of 10",
+    "key": "rk[4]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 8,
+    "spec_step": "decryption round 7 of 10",
+    "key": "rk[3]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 9,
+    "spec_step": "decryption round 8 of 10",
+    "key": "rk[2]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 10,
+    "spec_step": "decryption round 9 of 10",
+    "key": "rk[1]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns"
+   },
+   {
+    "round_cnt": 11,
+    "spec_step": "final round 10",
+    "key": "rk[0]",
+    "ops": "InvShiftRows, InvSubBytes, AddRoundKey"
+   }
+  ],
+  "update_flow": "start row 0 -> rows 1..10 key_cnt = 1..10 (round keys 1..10) -> rows 11..21 round_cnt = 1..11 -> row 22 o_done = 1 with o_data = plaintext. All counts follow from AA1-AA3.",
+  "no_update_flow": "start row 0 -> rows 1..11 round_cnt = 1..11 -> row 12 o_done = 1 with o_data = plaintext.",
+  "serial_rule": "From the task text: the key expansion runs first, only then decryption steps start; decryption never overlaps with key steps. key_done = 1 is a precondition for round_cnt = 1.",
+  "o_done_rule": "o_done = 1 only in the row after the clock with round_cnt = 11; never during key expansion (spec: not before the decryption is complete).",
+  "remember_across_cycles": [
+   {
+    "what": "i_data (as state_reg)",
+    "why": "TB and cocotb drive i_data = 0 from the row after start; the block must be latched at the start edge"
+   },
+   {
+    "what": "i_key (as rk[0]) when i_update_key = 1",
+    "why": "i_key = 0 from the row after start; needed for all 10 key steps"
+   },
+   {
+    "what": "the decision 'update or not' (as key_cnt vs round_cnt, or an explicit flag)",
+    "why": "i_update_key = 0 in the rows after start (TB and cocotb clear it), so the flow cannot sample it again"
+   },
+   {
+    "what": "expanded key rk[0..10] across operations",
+    "why": "a later start with i_update_key = 0 must reuse it; cocotb picks update_key at random per run"
+   },
+   {
+    "what": "busy (key_cnt != 0 or round_cnt != 0)",
+    "why": "start is a one-cycle pulse and must not restart a running operation (AA7)"
+   }
+  ],
+  "per_case": {
+   "update": "start_with_update, 10 x key_step, 11 x round_step, o_done",
+   "no_update": "start_without_update, 11 x round_step, o_done"
+  }
+ },
+ "schedule": {
+  "note": "Row t = values seen during clock cycle t. Row 0 = the row in which i_start = 1 is presented (sampled at the edge that ends row 0). i_start/i_update_key show the inputs of that row. key_cnt/round/key_done/o_done are register values during the row. Spec-fixed: o_done = 0 in row 1 and 1 only when o_data is the plaintext (TB/cocotb). Everything else in the table depends on AA1-AA4 (row counts) and AA6 (key_done initial value).",
+  "cases": [
+   {
+    "case": "update",
+    "scenario": "TB Simple_test(1) right after reset",
+    "i_start": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "i_update_key": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "key_cnt": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "round": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     0
+    ],
+    "key_done": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "o_done": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "o_data_valid": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "rows": 23,
+    "fixed_by_spec": [
+     "i_start",
+     "i_update_key",
+     "o_done[1]=0",
+     "o_done at last row =1 with correct o_data"
+    ],
+    "depends_on": {
+     "rows 1..10 key_cnt": "AA1",
+     "rows 11..21 round": "AA2, AA3",
+     "row 22 o_done": "AA1-AA4",
+     "key_done initial 0": "AA6, AA12"
+    }
+   },
+   {
+    "case": "no_update",
+    "scenario": "TB Simple_test(0) after an update run (stored key valid)",
+    "i_start": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "i_update_key": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "key_cnt": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "round": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     0
+    ],
+    "key_done": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "o_done": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "o_data_valid": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "rows": 13,
+    "fixed_by_spec": [
+     "i_start",
+     "i_update_key",
+     "o_done[1]=0",
+     "o_done at last row =1 with correct o_data"
+    ],
+    "depends_on": {
+     "rows 1..11 round": "AA2, AA3",
+     "row 12 o_done": "AA2-AA4",
+     "key_done=1 throughout": "AA12"
+    }
+   }
+  ]
+ }
+}

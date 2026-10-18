@@ -1,0 +1,139 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk6",
+ "name": "rcon_step",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "62-71",
+   "kind": "assign",
+   "drives": [
+    "Rcon[0..9]"
+   ],
+   "source": "62: assign Rcon[0] = 8'h01; ... 71: assign Rcon[9] = 8'h36;"
+  },
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "101",
+   "kind": "always_comb",
+   "drives": [
+    "steps[2].RconXor"
+   ],
+   "source": "101: RconXor = {SubWord[NBW_WORD-1-:NBW_BYTE]^Rcon[i], SubWord[NBW_WORD-NBW_BYTE-1-:(NBW_WORD-NBW_BYTE)]};"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "sub",
+    "upstream": "steps[2].SubWord(blk5)",
+    "arch_connected_to": "sub_word.sub",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "n",
+    "upstream": "steps 的索引 i(Rcon[i]);n=i+1",
+    "arch_connected_to": "key_expand_step.n",
+    "rtl": {
+     "signal": "=3",
+     "width": 4,
+     "kind": "held",
+     "valid_when": "常數",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101: ^Rcon[i]",
+     "unknown": [
+      "n 以 harness 常數 =3 代入,RTL 無 n 訊號"
+     ]
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "t",
+    "downstream": "steps[2].RconXor(→ line 103 的 XOR)",
+    "arch_connected_to": "word_xor_chain.t",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 26,
+   "match": 26,
+   "mismatch": 0,
+   "raw": "tool-blk6-check-v0.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 0,
+   "mismatch": 10,
+   "raw": "tool-blk6-check-v0.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "10 個實例 function check 全 match(含 n=1..10);輸入來自全 0 金鑰衍生值"
+ },
+ "difficulty": {
+  "level": "easy",
+  "reason": "常數表加一個位元組 XOR"
+ },
+ "control": {
+  "assessment": "unknown",
+  "items": [
+   {
+    "item": "有效條件/時序(key_cnt 1..10)",
+    "expected": "key_cnt = 1..10 逐列",
+    "observed": "RTL 沒有 key_cnt;10 個 steps[i] 實例每個時脈同時運算(空間展開),expanded_key_ff 每個時脈移位一格;更新啟動從未進入金鑰模組:uu_aes128_key_expansion.i_start 全程 0,key_exp_steps_ff 全程 000,key_done 全程 0",
+    "verdict": "unknown",
+    "evidence": "aes128_key_expansion.sv 73-109 'for(genvar i = 0; i < STEPS; i++) begin : steps'; aes128_key_expansion.sv 111-113 'assign expanded_key_nx = {valid_key , step_key[0], step_key[1], ...'; RUN #17 欄位 key_done=0、uu_aes128_key_expansion.i_start=0、key_exp_steps_ff=000 於所有 26 列"
+   },
+   {
+    "item": "逐實例 function check(補充)",
+    "expected": "與 model 相符",
+    "observed": "steps[0..9]:各 26/26 match",
+    "verdict": "consistent",
+    "evidence": "blk6_steps[0..9] 皆 (26,26,0)"
+   }
+  ]
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "aligned",
+ "unknown": [],
+ "no_change": false
+}

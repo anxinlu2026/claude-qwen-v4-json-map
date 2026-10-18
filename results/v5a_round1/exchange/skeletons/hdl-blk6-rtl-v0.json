@@ -1,0 +1,98 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk6",
+ "name": "rcon_step",
+ "active_when": "TODO",
+ "rtl_map": [
+  {
+   "file": "TODO",
+   "lines": "TODO",
+   "kind": "TODO",
+   "drives": [],
+   "source": "TODO"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "sub",
+    "upstream": "TODO",
+    "arch_connected_to": "sub_word.sub",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "n",
+    "upstream": "TODO",
+    "arch_connected_to": "key_expand_step.n",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "t",
+    "downstream": "TODO",
+    "arch_connected_to": "word_xor_chain.t",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {},
+ "confidence": {
+  "level": "TODO",
+  "reason": "TODO"
+ },
+ "difficulty": {
+  "level": "TODO",
+  "reason": "TODO"
+ },
+ "control": {
+  "assessment": "TODO",
+  "items": []
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "TODO",
+ "unknown": [],
+ "no_change": false
+}

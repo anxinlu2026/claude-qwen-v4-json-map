@@ -1,0 +1,61 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk6",
+ "name": "rcon_step",
+ "order": 6,
+ "function_text": "model.py:rcon_xor(w: 4 bytes, n: 1..10) -> w with byte 0 XORed with Rcon[n] (01 02 04 08 10 20 40 80 1b 36); bytes 1..3 unchanged. CLI: rcon_step <sub 8 hex> <n hex> -> 8 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "sub",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "sub_word.sub"
+   },
+   {
+    "name": "n",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.n"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "t",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "word_xor_chain.t"
+   }
+  ]
+ },
+ "elements": [],
+ "python": {
+  "module": "model.py",
+  "function": "rcon_xor"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "open",
+ "no_change": false
+}

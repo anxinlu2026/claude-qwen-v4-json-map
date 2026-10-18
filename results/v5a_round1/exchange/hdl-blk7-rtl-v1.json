@@ -1,0 +1,158 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 1,
+ "block": "blk7",
+ "name": "word_xor_chain",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "103-106",
+   "kind": "always_comb",
+   "drives": [
+    "step_key[2]"
+   ],
+   "source": "103: step_key[i][NBW_KEY-1-:NBW_WORD]            = expanded_key_ff[NBW_OUT-(4*i+3)*NBW_WORD-1-:NBW_WORD] ^ RconXor;"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "prev_round_key",
+    "upstream": "expanded_key_ff 的 slot 2",
+    "arch_connected_to": "key_expand_step.prev_round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1151:1024]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 103-106",
+     "unknown": [
+      "signal 為 expanded_key_ff[1151:1024]"
+     ]
+    }
+   },
+   {
+    "arch_port": "t",
+    "upstream": "steps[2].RconXor(blk6)",
+    "arch_connected_to": "rcon_step.t",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "next_round_key",
+    "downstream": "step_key[2](→ expanded_key_nx,blk3 輸出)",
+    "arch_connected_to": "key_expand_step.next_round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.step_key[2]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 103-106",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 39,
+   "match": 39,
+   "mismatch": 0,
+   "raw": "tool-blk7-check-v1.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 1,
+   "mismatch": 9,
+   "raw": "tool-blk7-check-v1.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "steps[2] 39/39 match(真實金鑰、被接受的 start);其餘實例未在 v1 重跑(工具鎖定)"
+ },
+ "difficulty": {
+  "level": "medium",
+  "reason": "四個字串接 XOR,字序易錯"
+ },
+ "control": {
+  "assessment": "consistent",
+  "items": [
+   {
+    "item": "有效條件/時序",
+    "expected": "key_cnt=1..10 逐列",
+    "observed": "10 個實例同時運算、每拍移位;rk[k] 於 row k+1 有效(key_done 在 row 11);steps[2] 39/39 match",
+    "verdict": "consistent",
+    "evidence": "RUN #199;tool-blk7-check-v1.json"
+   }
+  ]
+ },
+ "questions": [],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "與 blk3 相同:字序相反(line 103-106)是不符的來源;blk4/5/6 全 match,支持不符出現在 XOR 鏈而不在 t 的產生。",
+   "evidence": "blk4/5/6 steps[2..9] 全 match;blk7 steps[2..9] mismatch;xor 摘要見 tool-blk7-check-v0.json",
+   "status": "open"
+  }
+ ],
+ "replies": [
+  {
+   "replies_to": "a2",
+   "text": "見 hdl-blk3 c1:每個輸出字取 prev 字 4*i+3/+2/+1/+0 與已算出的前一輸出字 XOR;第 103–106 行原文在 rtl_changes。"
+  }
+ ],
+ "rtl_changes": [
+  {
+   "id": "c1",
+   "based_on": "a2",
+   "file": "aes128_key_expansion.sv",
+   "lines": "103-106",
+   "before": "step_key 的四個字依序取 expanded_key_ff 的字 4*i+3、4*i+2、4*i+1、4*i",
+   "after": "依序取字 4*i、4*i+1、4*i+2、4*i+3(w0'=prev w0^RconXor、w1'=prev w1^w0'、w2'=prev w2^w1'、w3'=prev w3^w2')",
+   "reason": "FIPS 197 Sec 5.2 的字鏈接;修改前 steps[2] 在被接受的 start 後 37/39 列 mismatch(xor 型態 62 63 63 63 00 ..),修改後 39/39 match",
+   "harness_after": {
+    "function_check": {
+     "match": 39,
+     "mismatch": 0
+    },
+    "input_check": {
+     "match": 1,
+     "mismatch": 9
+    }
+   },
+   "status": "applied"
+  }
+ ],
+ "status": "aligned",
+ "unknown": [
+  "steps[2] 以外的實例本輪未重跑(v0 補充程序已證實 steps[0..9] 的 block 4/5/6 一致;3/7 於 v0 因字序在 steps[2..9] mismatch,修改後只重跑 steps[2])"
+ ],
+ "no_change": false
+}

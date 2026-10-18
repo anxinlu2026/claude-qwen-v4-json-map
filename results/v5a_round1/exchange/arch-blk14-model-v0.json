@@ -1,0 +1,49 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk14",
+ "name": "output_map",
+ "order": 14,
+ "function_text": "model.py:output_map(state: 16 bytes) -> int128; o_data[127-8n -: 8] = byte n. CLI: output_map <q 32 hex> -> 32 hex, identical digits.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "q",
+    "width": 128,
+    "kind": "held",
+    "valid_when": "always; meaningful when o_done = 1",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.q"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "o_data",
+    "width": 128,
+    "kind": "held",
+    "valid_when": "o_done = 1 (AA5)",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "design port.o_data"
+   }
+  ]
+ },
+ "elements": [],
+ "python": {
+  "module": "model.py",
+  "function": "output_map"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "open",
+ "no_change": false
+}

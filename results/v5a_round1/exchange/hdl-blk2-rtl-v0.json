@@ -1,0 +1,236 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk2",
+ "name": "round_key_store",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "39-56",
+   "kind": "always_ff",
+   "drives": [
+    "expanded_key_ff",
+    "key_exp_steps_ff"
+   ],
+   "source": "44: expanded_key_ff <= expanded_key_nx;"
+  },
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "111-113",
+   "kind": "assign",
+   "drives": [
+    "expanded_key_nx"
+   ],
+   "source": "111: assign expanded_key_nx = {valid_key  , step_key[0], step_key[1], step_key[2],"
+  },
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "115-121",
+   "kind": "always_comb",
+   "drives": [
+    "valid_key"
+   ],
+   "source": "116: if (i_start) begin / 117: valid_key = i_key; / 119: valid_key = expanded_key_ff[NBW_OUT-1-:NBW_KEY];"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "lines": "177-184",
+   "kind": "instance",
+   "drives": [
+    "expanded_key",
+    "key_done"
+   ],
+   "source": "177: aes128_key_expansion uu_aes128_key_expansion ("
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "rk0_in",
+    "upstream": "design port i_key",
+    "arch_connected_to": "design port.i_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.i_key",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "i_start(金鑰模組)= i_start & i_update_key & o_done",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 117: valid_key = i_key;",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "rk_next",
+    "upstream": "steps[0..9] 的 step_key(各佔一格)",
+    "arch_connected_to": "key_expand_step.next_round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_nx",
+     "width": 1408,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 111-113: assign expanded_key_nx = {valid_key , step_key[0], ... step_key[9]};",
+     "unknown": [
+      "signal 為整個 expanded_key_nx(含 slot 0 = valid_key)"
+     ]
+    }
+   },
+   {
+    "arch_port": "key_idx",
+    "upstream": "無 key_cnt;以獨熱移位暫存器 key_exp_steps_ff 代替",
+    "arch_connected_to": "key_counter.key_cnt",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.key_exp_steps_ff",
+     "width": 11,
+     "kind": "level",
+     "valid_when": "i_start 後 1 位元左移",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 52: key_exp_steps_ff <= key_exp_steps_ff << 1;",
+     "unknown": [
+      "RTL 沒有 4 位元計數,只有 11 位元獨熱"
+     ]
+    }
+   },
+   {
+    "arch_port": "rk0_load",
+    "upstream": "decrypt.sv 180 i_start & i_update_key & o_done",
+    "arch_connected_to": "key_counter.upd_load",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.i_start",
+     "width": 1,
+     "kind": "pulse",
+     "valid_when": "i_start & i_update_key & o_done",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 180: .i_start       (i_start & i_update_key & o_done),",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "rk_prev",
+    "downstream": "steps[i] 各自讀 expanded_key_ff 的 slot i(空間展開,無單一 rk_prev 匯流排)",
+    "arch_connected_to": "key_expand_step.prev_round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff",
+     "width": 1408,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 1,
+     "source": "aes128_key_expansion.sv 100: RotWord = {expanded_key_ff[NBW_OUT-(i+1)*NBW_KEY+...",
+     "unknown": [
+      "RTL 無 rk_prev 匯流排;signal 為整個 expanded_key_ff"
+     ]
+    }
+   },
+   {
+    "arch_port": "rk_all",
+    "downstream": "decrypt.sv expanded_key(經 line 119 取 slot 11-round_ff)",
+    "arch_connected_to": "round_key_select.rk_all",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.expanded_key",
+     "width": 1408,
+     "kind": "data",
+     "valid_when": "key_done = 1(依 arch);RTL 的 key_done 從未為 1",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 1,
+     "latency_max_cycles": 1,
+     "source": "aes128_key_expansion.sv 33: assign o_expanded_key = expanded_key_ff;",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 0,
+   "match": 0,
+   "mismatch": 0,
+   "raw": "tool-blk2-check-v0.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 0,
+   "mismatch": 10,
+   "raw": "tool-blk2-check-v0.json"
+  }
+ },
+ "confidence": {
+  "level": "low",
+  "reason": "model.py 的 round_key_store 沒有 CLI,harness 不可比對;更新未被觸發,擴展未被觀察到有效資料"
+ },
+ "difficulty": {
+  "level": "hard",
+  "reason": "RTL 用 10 個空間實例加一個 1408 位元移位暫存器取代架構的逐步寫入"
+ },
+ "control": {
+  "assessment": "suspect",
+  "items": [
+   {
+    "item": "有效條件/時序(key_cnt 1..10)",
+    "expected": "key_cnt 0..10 於 update 啟動後各列;rk[n] 於第 n+1 列有效(arch-top-model-v0.json schedule、arch-blk2-model-v0.json)",
+    "observed": "RTL 沒有 key_cnt;10 個 steps[i] 實例每個時脈同時運算(空間展開),expanded_key_ff 每個時脈移位一格;更新啟動從未進入金鑰模組:uu_aes128_key_expansion.i_start 全程 0,key_exp_steps_ff 全程 000,key_done 全程 0",
+    "verdict": "suspect",
+    "evidence": "aes128_key_expansion.sv 73-109 'for(genvar i = 0; i < STEPS; i++) begin : steps'; aes128_key_expansion.sv 111-113 'assign expanded_key_nx = {valid_key , step_key[0], step_key[1], ...'; RUN #17 欄位 key_done=0、uu_aes128_key_expansion.i_start=0、key_exp_steps_ff=000 於所有 26 列"
+   },
+   {
+    "item": "完成旗標 key_done",
+    "expected": "update 情形下 row 11 起 key_done=1",
+    "observed": "靜態閱讀:key_exp_steps_ff 為 11 位元;line 47 起始值為 bit0,line 49-50 在 bit9 為 1 時清成 0,其他時候左移(line 52);o_done = bit[10](line 34)。依此寫法 bit10 無法被設定(靜態推理;動態未觀察,因 start 未進入)",
+    "verdict": "suspect",
+    "evidence": "aes128_key_expansion.sv 34, 47-52"
+   }
+  ]
+ },
+ "questions": [
+  {
+   "id": "q1",
+   "text": "RTL 的金鑰擴展是『每個時脈 10 個 step 同時運算、1408 位元暫存器移位』,不是架構的『key_cnt 逐步寫入 rk[n]』。第 0 輪是否接受以 expanded_key_ff 的 slot k 對應 rk[k],並以 steps[i] 對應 n=i+1 的 key_expand_step?",
+   "refs": [
+    "aes128_key_expansion.sv:73-113",
+    "arch-blk2-model-v0.json#elements"
+   ]
+  }
+ ],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "key_done(o_done)永遠不會變 1:key_exp_steps_ff 的 bit[STEPS](bit 10)沒有任何賦值路徑會設定它。",
+   "evidence": "aes128_key_expansion.sv 47-52 與 34;動態上 key_exp_steps_ff 全程 000(RUN #17),因 start 未進入,尚無動態證據。信心低,靜態推理。",
+   "status": "open"
+  }
+ ],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "open",
+ "unknown": [
+  "harness 比對:無 model CLI",
+  "key_idx 的等價物"
+ ],
+ "no_change": false
+}

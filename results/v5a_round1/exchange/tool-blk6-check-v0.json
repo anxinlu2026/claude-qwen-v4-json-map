@@ -1,0 +1,34 @@
+{
+ "block": "blk6",
+ "name": "rcon_step",
+ "round": 0,
+ "time": "2026-10-18 17:25:16",
+ "inputs_in_model_order": [
+  "sub",
+  "n"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord",
+  "=3"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord =3 --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor --model python3 /tmp/ip_work/arch/model_cli.py block rcon_step --max 40 --when 1",
+  "rows": 26,
+  "match": 26,
+  "mismatch": 0,
+  "raw": "match\n 85 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n 95 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n105 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n115 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n125 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n135 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n145 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n155 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n165 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n175 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n185 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n195 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n205 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n215 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n225 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n235 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n245 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\n255 |                                                                 0f0fac99 |  3 |                                                                       0b0fac99 | 0b0fac99 |  match\nRESULT: 26 of 26 compared row(s) match the model.\nRconXor: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 10,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "sub": "8a84eb01",
+    "n": 1
+   }
+  }
+ }
+}

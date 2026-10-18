@@ -1,0 +1,49 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk10",
+ "name": "inv_shift_rows",
+ "order": 10,
+ "function_text": "model.py:inv_shift_rows(state: 16 bytes) -> out[row r, col c] = in[row r, col (c-r) mod 4]; byte index 4*c + r. Row 0 unchanged. CLI: inv_shift_rows <state 32 hex> -> 32 hex. Example 000102..0f -> 000d0a0704010e0b0805020f0c090603.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.q"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_sub_bytes.state"
+   }
+  ]
+ },
+ "elements": [],
+ "python": {
+  "module": "model.py",
+  "function": "inv_shift_rows"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "open",
+ "no_change": false
+}

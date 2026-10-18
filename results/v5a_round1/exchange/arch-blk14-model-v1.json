@@ -1,0 +1,79 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk14",
+ "name": "output_map",
+ "order": 14,
+ "function_text": "model.py:output_map(state: 16 bytes) -> int128; o_data[127-8n -: 8] = byte n. CLI: output_map <q 32 hex> -> 32 hex, identical digits.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "q",
+    "width": 128,
+    "kind": "held",
+    "valid_when": "always; meaningful when o_done = 1",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.q"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "o_data",
+    "width": 128,
+    "kind": "held",
+    "valid_when": "o_done = 1 (AA5)",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "design port.o_data"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "o_data",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "0 (state reset)",
+   "updates_when": "always",
+   "next_value": "o_data[127-8n -: 8] = state byte n(row n%4, col n//4)",
+   "spec_ref": "verif/tb_aes128_dec.sv:55-57; AA5"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "output_map"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "answer",
+   "text": "control 的 o_done 待機為 1(RTL 的 o_done = 閒置):TB 只等上升沿且在 start 後 o_done 必須先降為 0(TB 54-55)。待機高電位本身不被規格禁止,AA4 的『單拍脈衝』是我的選擇;只要 start 被接受後下一列 o_done=0、o_done=1 的那一列 o_data 為明文即可。請不要把待機為 1 當缺陷。",
+   "basis": "testbench",
+   "refs": [
+    "verif/tb_aes128_dec.sv:54-55",
+    "hdl-blk14-rtl-v0.json#control"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "suggestion",
+   "text": "o_data=…6000… 在 t=125(TB FAIL 的輸出)是上游未被接受的 start 的結果,與此接線方塊無關(26/26 match),狀態 aligned。",
+   "basis": "hdl_report",
+   "refs": [
+    "tool-blk14-check-v0.json"
+   ]
+  }
+ ],
+ "decisions": [],
+ "status": "aligned",
+ "no_change": false
+}

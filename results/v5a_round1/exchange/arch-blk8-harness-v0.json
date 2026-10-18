@@ -1,0 +1,138 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk8",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 1,
+   "model_condition": "round_cnt = 1",
+   "inputs": {
+    "round_cnt": 1,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "d014f9a8c9ee2589e13f0cc8b6630ca6"
+   }
+  },
+  {
+   "step": 2,
+   "model_condition": "round_cnt = 2",
+   "inputs": {
+    "round_cnt": 2,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "ac7766f319fadc2128d12941575c006e"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "round_cnt = 3",
+   "inputs": {
+    "round_cnt": 3,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "ead27321b58dbad2312bf5607f8d292f"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "round_cnt = 4",
+   "inputs": {
+    "round_cnt": 4,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "4e54f70e5f5fc9f384a64fb24ea6dc4f"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "round_cnt = 5",
+   "inputs": {
+    "round_cnt": 5,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "6d88a37a110b3efddbf98641ca0093fd"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "round_cnt = 6",
+   "inputs": {
+    "round_cnt": 6,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "d4d1c6f87c839d87caf2b8bc11f915bc"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "round_cnt = 7",
+   "inputs": {
+    "round_cnt": 7,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "ef44a541a8525b7fb671253bdb0bad00"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "round_cnt = 8",
+   "inputs": {
+    "round_cnt": 8,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "3d80477d4716fe3e1e237e446d7a883b"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "round_cnt = 9",
+   "inputs": {
+    "round_cnt": 9,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "f2c295f27a96b9435935807a7359f67f"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "round_cnt = 10",
+   "inputs": {
+    "round_cnt": 10,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "a0fafe1788542cb123a339392a6c7605"
+   }
+  },
+  {
+   "step": 11,
+   "model_condition": "round_cnt = 11",
+   "inputs": {
+    "round_cnt": 11,
+    "rk_all": "d014f9a8c9ee2589e13f0cc8b6630ca6ac7766f319fadc2128d12941575c006eead27321b58dbad2312bf5607f8d292f4e54f70e5f5fc9f384a64fb24ea6dc4f6d88a37a110b3efddbf98641ca0093fdd4d1c6f87c839d87caf2b8bc11f915bcef44a541a8525b7fb671253bdb0bad003d80477d4716fe3e1e237e446d7a883bf2c295f27a96b9435935807a7359f67fa0fafe1788542cb123a339392a6c76052b7e151628aed2a6abf7158809cf4f3c"
+   },
+   "outputs": {
+    "round_key": "2b7e151628aed2a6abf7158809cf4f3c"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "round_cnt = 1..11",
+   "type": "combinational"
+  }
+ ],
+ "register_expected": []
+}

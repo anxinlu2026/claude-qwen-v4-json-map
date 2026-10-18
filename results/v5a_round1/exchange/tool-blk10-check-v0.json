@@ -1,0 +1,158 @@
+{
+ "block": "blk10",
+ "name": "inv_shift_rows",
+ "round": 0,
+ "time": "2026-10-18 17:25:17",
+ "inputs_in_model_order": [
+  "state"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3]"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3] --out tb_aes128_dec.uu_aes128_decrypt.ShiftRows[0][0]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[1][0]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[2][0]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[3][0]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[0][1]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[1][1]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[2][1]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[3][1]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[0][2]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[1][2]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[2][2]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[3][2]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[0][3]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[1][3]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[2][3]+tb_aes128_dec.uu_aes128_decrypt.ShiftRows[3][3] --model python3 /tmp/ip_work/arch/model_cli.py block inv_shift_rows --max 40 --when round_ff != 0",
+  "rows": 23,
+  "match": 0,
+  "mismatch": 21,
+  "raw": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            xxxxxx88xxxxxxxxxxxxxxxxxxxxxxxx |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      xxxxxxxxxxxxxx88xxxxxxxxxxxxxxxx |                                - | input unknown (x/z)\n255 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                71a11100edadab9e21e44063e551e8e3 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      71ad40e3ede4e8002151119ee5a1ab63 | 7151409eeda1e86321ad11e3e5e4ab00 |            MISMATCH\nRESULT: 0 of 21 compared row(s) match the model.\nShiftRows: recorded as mismatch. With the inputs it actually receives, this block does not give the model's output: the fault is inside it. If it is more than one driver, break it down (blockcheck its parts); at a single driver, fix that driver.\n",
+  "xor_of_rtl_and_model_by_byte": [
+   {
+    "t": 15,
+    "xor_per_byte": [
+     "00",
+     "bd",
+     "00",
+     "de",
+     "00",
+     "86",
+     "00",
+     "4a",
+     "00",
+     "bd",
+     "00",
+     "de",
+     "00",
+     "86",
+     "00",
+     "4a"
+    ]
+   },
+   {
+    "t": 25,
+    "xor_per_byte": [
+     "00",
+     "8f",
+     "00",
+     "d4",
+     "00",
+     "36",
+     "00",
+     "c2",
+     "00",
+     "8f",
+     "00",
+     "d4",
+     "00",
+     "36",
+     "00",
+     "c2"
+    ]
+   },
+   {
+    "t": 35,
+    "xor_per_byte": [
+     "00",
+     "75",
+     "00",
+     "f7",
+     "00",
+     "40",
+     "00",
+     "fe",
+     "00",
+     "75",
+     "00",
+     "f7",
+     "00",
+     "40",
+     "00",
+     "fe"
+    ]
+   },
+   {
+    "t": 45,
+    "xor_per_byte": [
+     "00",
+     "28",
+     "00",
+     "70",
+     "00",
+     "8e",
+     "00",
+     "44",
+     "00",
+     "28",
+     "00",
+     "70",
+     "00",
+     "8e",
+     "00",
+     "44"
+    ]
+   },
+   {
+    "t": 55,
+    "xor_per_byte": [
+     "00",
+     "87",
+     "00",
+     "ca",
+     "00",
+     "f3",
+     "00",
+     "79",
+     "00",
+     "87",
+     "00",
+     "ca",
+     "00",
+     "f3",
+     "00",
+     "79"
+    ]
+   },
+   {
+    "t": 65,
+    "xor_per_byte": [
+     "00",
+     "11",
+     "00",
+     "8b",
+     "00",
+     "0e",
+     "00",
+     "17",
+     "00",
+     "11",
+     "00",
+     "8b",
+     "00",
+     "0e",
+     "00",
+     "17"
+    ]
+   }
+  ]
+ },
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 10,
+  "first_step_not_seen": {
+   "step": 2,
+   "wanted": {
+    "state": "e9317db5cb322c723d2e895faf090794"
+   }
+  }
+ }
+}

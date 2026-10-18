@@ -1,0 +1,169 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk2",
+ "name": "round_key_store",
+ "order": 2,
+ "function_text": "model.py:Top.rk (11 lists of 16 bytes). Per edge: rk0_load -> rk[0] = bytes of i_key (byte 0 = MSB); key_cnt = n != 0 -> rk[n] = next_round_key(rk[n-1], n). Not pure; no CLI.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "rk0_in",
+    "width": 128,
+    "kind": "data-valid-with(upd_load)",
+    "valid_when": "row 0 of an update start",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "design port.i_key"
+   },
+   {
+    "name": "rk_next",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.next_round_key"
+   },
+   {
+    "name": "key_idx",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_counter.key_cnt"
+   },
+   {
+    "name": "rk0_load",
+    "width": 1,
+    "kind": "one-cycle pulse",
+    "valid_when": "row 0 of an update start",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_counter.upd_load"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "rk_prev",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 1,
+    "connected_to": "key_expand_step.prev_round_key"
+   },
+   {
+    "name": "rk_all",
+    "width": 1408,
+    "kind": "held",
+    "valid_when": "rk[0] from row 1 of an update; rk[n] from row n+1; all valid when key_done = 1",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 1,
+    "latency_max_cycles": 1,
+    "connected_to": "round_key_select.rk_all"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "rk[0]",
+   "type": "register",
+   "width": 128,
+   "reset_value": "0",
+   "updates_when": "start 被接受且 i_update_key=1",
+   "next_value": "i_key(byte 0 = MSB)",
+   "spec_ref": "task prompt; AA8, AA10"
+  },
+  {
+   "name": "rk[n], n=1..10",
+   "type": "register",
+   "width": 128,
+   "reset_value": "0",
+   "updates_when": "展開第 n 步結束",
+   "next_value": "next_round_key(rk[n-1], n)",
+   "spec_ref": "FIPS 197 Sec 5.2"
+  },
+  {
+   "name": "key_done",
+   "type": "register",
+   "width": 1,
+   "reset_value": "0",
+   "updates_when": "update 起點清 0;第 10 步結束後置 1;之後保持",
+   "next_value": "見 AA12",
+   "spec_ref": "task prompt: expand first, then decrypt"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "Top.rk"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "answer",
+   "replies_to": "q1",
+   "text": "q1:規格沒有規定金鑰展開是逐步(串列)或同拍並列(AA1 是我選的)。只要求『先展開、再解密』、i_key 在 start 當拍擷取(TB 29-52 在下一拍把 i_key 清 0)。所以 expanded_key_ff 的第 k 個欄位對應 rk[k]、steps[i] 對應 n=i+1 可以接受,依『值』對應而不是依拍數。模型保留,不要求 RTL 的 10 拍計數。",
+   "basis": "spec",
+   "refs": [
+    "task prompt",
+    "verif/tb_aes128_dec.sv:45-52",
+    "hdl-blk2-rtl-v0.json#q1"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "hypothesis",
+   "text": "H_arch_2:key_done 或等價的完成旗標在 RTL 中從不為 1,使得即使 start 被接受,金鑰展開後解密也不會開始。依據:HDL h1(靜態推論,低信心)。可證偽的觀察:被接受的 start(i_update_key=1)後,等價的完成旗標在第 10 步後是否為 1;若有,H 被推翻。",
+   "basis": "hdl_report",
+   "refs": [
+    "hdl-blk2-rtl-v0.json#h1",
+    "arch-top-model-v0.json#schedule.update"
+   ]
+  },
+  {
+   "id": "a3",
+   "type": "doubt",
+   "text": "目前 10 個 input check 都不等:RTL 的金鑰是全 0(i_update_key 的 start 沒被接受),不是 harness 的 2b7e…。請在有被接受的 start 後重做,才能得到 rk[0..10] 的實際比對;expected 在 harness-v1 的 register_expected。",
+   "basis": "testbench",
+   "refs": [
+    "arch-blk2-harness-v1.json#register_expected",
+    "verif/tb_aes128_dec.sv:31"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "q1",
+   "decision": "model_kept",
+   "reason": "串列/並列展開不被規格規定;以值對應即可。",
+   "basis": "spec",
+   "refs": [
+    "task prompt"
+   ]
+  }
+ ],
+ "status": "open",
+ "no_change": false
+}

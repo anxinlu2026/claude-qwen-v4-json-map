@@ -1,0 +1,158 @@
+{
+ "block": "blk12",
+ "name": "inv_mix_columns",
+ "round": 0,
+ "time": "2026-10-18 17:25:18",
+ "inputs_in_model_order": [
+  "state"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3] --out tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3] --model python3 /tmp/ip_work/arch/model_cli.py block inv_mix_columns --max 40 --when round_ff != 0",
+  "rows": 23,
+  "match": 0,
+  "mismatch": 21,
+  "raw": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      xxxxxx88xxxxxxxxxxxxxxxxxxxxxxxx |                                - | input unknown (x/z)\n255 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                c1bfe37b4f3ae2d155a516c49e9044f5 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      71a11100edadab9e21e44063e551e8e3 | 22add7be67504637906e974bf79c489c |            MISMATCH\nRESULT: 0 of 21 compared row(s) match the model.\nMixColumns: recorded as mismatch. With the inputs it actually receives, this block does not give the model's output: the fault is inside it. If it is more than one driver, break it down (blockcheck its parts); at a single driver, fix that driver.\n",
+  "xor_of_rtl_and_model_by_byte": [
+   {
+    "t": 15,
+    "xor_per_byte": [
+     "10",
+     "20",
+     "30",
+     "78",
+     "4a",
+     "bd",
+     "29",
+     "de",
+     "f7",
+     "bd",
+     "00",
+     "29",
+     "00",
+     "00",
+     "00",
+     "00"
+    ]
+   },
+   {
+    "t": 25,
+    "xor_per_byte": [
+     "bb",
+     "fd",
+     "12",
+     "e8",
+     "2c",
+     "a9",
+     "43",
+     "f7",
+     "d1",
+     "c9",
+     "05",
+     "48",
+     "b6",
+     "65",
+     "dc",
+     "0f"
+    ]
+   },
+   {
+    "t": 35,
+    "xor_per_byte": [
+     "c2",
+     "e8",
+     "43",
+     "1f",
+     "94",
+     "0f",
+     "b0",
+     "54",
+     "64",
+     "ea",
+     "78",
+     "21",
+     "7e",
+     "97",
+     "21",
+     "c8"
+    ]
+   },
+   {
+    "t": 45,
+    "xor_per_byte": [
+     "e1",
+     "58",
+     "e8",
+     "ed",
+     "9c",
+     "b6",
+     "1d",
+     "c4",
+     "ef",
+     "62",
+     "ad",
+     "f0",
+     "6c",
+     "e2",
+     "1c",
+     "92"
+    ]
+   },
+   {
+    "t": 55,
+    "xor_per_byte": [
+     "29",
+     "a0",
+     "0e",
+     "cf",
+     "3a",
+     "2d",
+     "41",
+     "d9",
+     "28",
+     "45",
+     "85",
+     "b9",
+     "6b",
+     "50",
+     "4d",
+     "76"
+    ]
+   },
+   {
+    "t": 65,
+    "xor_per_byte": [
+     "0f",
+     "d8",
+     "ac",
+     "77",
+     "6e",
+     "64",
+     "cd",
+     "c8",
+     "90",
+     "28",
+     "cf",
+     "1e",
+     "bf",
+     "dc",
+     "a3",
+     "c0"
+    ]
+   }
+  ]
+ },
+ "input_check": {
+  "steps": 9,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 9,
+  "first_step_not_seen": {
+   "step": 2,
+   "wanted": {
+    "state": "473794ed40d4e4a5a3703aa64c9f42bc"
+   }
+  }
+ }
+}

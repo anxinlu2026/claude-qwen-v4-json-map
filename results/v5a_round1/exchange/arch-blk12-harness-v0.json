@@ -1,0 +1,107 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk12",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 2,
+   "model_condition": "round_cnt = 2",
+   "inputs": {
+    "state": "473794ed40d4e4a5a3703aa64c9f42bc"
+   },
+   "outputs": {
+    "state_out": "876e46a6f24ce78c4d904ad897ecc395"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "round_cnt = 3",
+   "inputs": {
+    "state": "00512fd1b1c889ff54766dcdfa1b99ea"
+   },
+   "outputs": {
+    "state_out": "be3bd4fed4e1f2c80a642cc0da83864d"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "round_cnt = 4",
+   "inputs": {
+    "state": "1415b5bf461615ec274656d7342ad843"
+   },
+   "outputs": {
+    "state_out": "f783403f27433df09bb531ff54aba9d3"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "round_cnt = 5",
+   "inputs": {
+    "state": "4b868d6d2c4a8980339df4e837d218d8"
+   },
+   "outputs": {
+    "state_out": "a14f3dfe78e803fc10d5a8df4c632923"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "round_cnt = 6",
+   "inputs": {
+    "state": "25d1a9adbd11d168b63a338e4c4cc0b0"
+   },
+   "outputs": {
+    "state_out": "e1fb967ce8c8ae9b356cd2ba974ffb53"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "round_cnt = 7",
+   "inputs": {
+    "state": "0fd6daa9603138bf6fc0106b5eb31301"
+   },
+   "outputs": {
+    "state_out": "52a4c89485116a28e3cf2fd7f6505e07"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "round_cnt = 8",
+   "inputs": {
+    "state": "75ec0993200b633353c0cf7cbb25d0dc"
+   },
+   "outputs": {
+    "state_out": "acc1d6b8efb55a7b1323cfdf457311b5"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "round_cnt = 9",
+   "inputs": {
+    "state": "584dcaf11b4b5aacdbe7caa81b6bb0e5"
+   },
+   "outputs": {
+    "state_out": "49db873b453953897f02d2f177de961a"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "round_cnt = 10",
+   "inputs": {
+    "state": "046681e5e0cb199a48f8d37a2806264c"
+   },
+   "outputs": {
+    "state_out": "d4bf5d30e0b452aeb84111f11e2798e5"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "round_cnt = 2..10 only (bypassed in round_cnt 11)",
+   "type": "combinational"
+  }
+ ],
+ "register_expected": []
+}

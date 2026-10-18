@@ -1,0 +1,40 @@
+{
+ "block": "blk2",
+ "name": "round_key_store",
+ "round": 0,
+ "time": "2026-10-18 17:25:15",
+ "inputs_in_model_order": [
+  "rk0_in",
+  "rk_next",
+  "key_idx",
+  "rk0_load"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.i_key",
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_nx",
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.key_exp_steps_ff",
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.i_start"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.i_key tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_nx tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.key_exp_steps_ff tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.i_start --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff --model python3 /tmp/ip_work/arch/model_cli.py block round_key_store --max 40 --when 1",
+  "rows": 0,
+  "match": 0,
+  "mismatch": 0,
+  "raw": "BLOCKCHECK ERROR: the model command failed in /opt/resources/ip_models/aes128: python3 /tmp/ip_work/arch/model_cli.py block round_key_store 2b7e151628aed2a6abf7158809cf4f3c 00000000000000000000000000000000626363636263636362636363626363639b9898c9f9fbfbaa9b9898c9f9fbfbaaf2f45733696ccffa909734500b0fac99f8f424f9666cbc759997479a070fdf16ecf46c88786cf46e8b970feb1f0f970dc4f42996446cb18aaf974af52f0fd2e994f488363c6c10dae797eb554f0f73b934f459f0cc6cc18977973a938f0fa2ea6ff40c07376c94424c976f64140ff721d9f479f0da6ce1823a971a93390f82e1 000 0\nunknown block: round_key_store\nThe command is run as: COMMAND followed by the probed input values in hex, in the order of --in (a constant is written =VALUE after --in). Each block takes the inputs listed below, in that order.\nBlocks of the validated model (/opt/resources/ip_models/aes128/BLOCKS.txt):\ncommand (run in this folder): python3 aes128_model.py block NAME INPUT [INPUT ...]     every value in hex\n  NAME              inputs (in this order)                          output\n  add_round_key     state (32 digits), round key (32 digits)        state\n  inv_shift_rows    state (32 digits)                               state\n  inv_sub_bytes     state (32 digits)                               state\n  inv_mix_columns   state (32 digits)                               state\n  inv_mix_column    one column (8 digits, row 0 first)              column\n  next_round_key    round key N-1 (32 digits), N (1..10)            round key N\n  rot_word          word (8 digits)                                 word\n  sub_word          word (8 digits)                                 word\n  xtime             byte (2 digits)                                 byte      (multiplication by 02)\n  gmul              byte, byte (2 digits each)                      byte      (product in GF(2^8))\nstate and round key: byte n of the 32 digits is row (n mod 4), column (n div 4). Check which order the RTL signal uses.\nuse with:  rtl blockcheck --in INPUT_SIGNAL [INPUT_SIGNAL | =CONSTANT ...] --out OUTPUT_SIGNAL --model \"python3 aes128_model.py block NAME\"\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 10,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "rk0_in": null,
+    "rk_next": null,
+    "key_idx": null,
+    "rk0_load": null
+   }
+  }
+ }
+}

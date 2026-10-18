@@ -1,0 +1,137 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk7",
+ "name": "word_xor_chain",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "103-106",
+   "kind": "always_comb",
+   "drives": [
+    "step_key[2]"
+   ],
+   "source": "103: step_key[i][NBW_KEY-1-:NBW_WORD]            = expanded_key_ff[NBW_OUT-(4*i+3)*NBW_WORD-1-:NBW_WORD] ^ RconXor;"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "prev_round_key",
+    "upstream": "expanded_key_ff 的 slot 2",
+    "arch_connected_to": "key_expand_step.prev_round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.expanded_key_ff[1151:1024]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 103-106",
+     "unknown": [
+      "signal 為 expanded_key_ff[1151:1024]"
+     ]
+    }
+   },
+   {
+    "arch_port": "t",
+    "upstream": "steps[2].RconXor(blk6)",
+    "arch_connected_to": "rcon_step.t",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "next_round_key",
+    "downstream": "step_key[2](→ expanded_key_nx,blk3 輸出)",
+    "arch_connected_to": "key_expand_step.next_round_key",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.step_key[2]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 103-106",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 26,
+   "match": 2,
+   "mismatch": 24,
+   "raw": "tool-blk7-check-v0.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 0,
+   "mismatch": 10,
+   "raw": "tool-blk7-check-v0.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "對應清楚,mismatch 24/26 列;金鑰為全 0 使 steps[0..1] 看不出差異"
+ },
+ "difficulty": {
+  "level": "medium",
+  "reason": "四個字串接 XOR,字序易錯"
+ },
+ "control": {
+  "assessment": "suspect",
+  "items": [
+   {
+    "item": "有效條件/時序(key_cnt 1..10)",
+    "expected": "key_cnt = 1..10 逐列",
+    "observed": "RTL 沒有 key_cnt;10 個 steps[i] 實例每個時脈同時運算(空間展開),expanded_key_ff 每個時脈移位一格;更新啟動從未進入金鑰模組:uu_aes128_key_expansion.i_start 全程 0,key_exp_steps_ff 全程 000,key_done 全程 0",
+    "verdict": "suspect",
+    "evidence": "aes128_key_expansion.sv 73-109 'for(genvar i = 0; i < STEPS; i++) begin : steps'; aes128_key_expansion.sv 111-113 'assign expanded_key_nx = {valid_key , step_key[0], step_key[1], ...'; RUN #17 欄位 key_done=0、uu_aes128_key_expansion.i_start=0、key_exp_steps_ff=000 於所有 26 列"
+   },
+   {
+    "item": "逐實例 function check(補充)",
+    "expected": "與 model 相符",
+    "observed": "steps[0],[1]:26/26;steps[2..9]:2 match 24 mismatch",
+    "verdict": "suspect",
+    "evidence": "blk7_steps[0..9] 同 blk3 的結果"
+   }
+  ]
+ },
+ "questions": [],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "與 blk3 相同:字序相反(line 103-106)是不符的來源;blk4/5/6 全 match,支持不符出現在 XOR 鏈而不在 t 的產生。",
+   "evidence": "blk4/5/6 steps[2..9] 全 match;blk7 steps[2..9] mismatch;xor 摘要見 tool-blk7-check-v0.json",
+   "status": "open"
+  }
+ ],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "open",
+ "unknown": [],
+ "no_change": false
+}

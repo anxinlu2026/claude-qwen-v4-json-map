@@ -1,0 +1,37 @@
+{
+ "block": "blk1",
+ "name": "state_reg",
+ "round": 0,
+ "time": "2026-10-18 17:25:15",
+ "inputs_in_model_order": [
+  "state_in",
+  "state_next",
+  "load_sel"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.i_data",
+  "tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][3]",
+  "tb_aes128_dec.uu_aes128_decrypt.i_start"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.i_data tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][3] tb_aes128_dec.uu_aes128_decrypt.i_start --out tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][3] --model python3 /tmp/ip_work/arch/model_cli.py block state_reg --max 40 --when 1",
+  "rows": 0,
+  "match": 0,
+  "mismatch": 0,
+  "raw": "BLOCKCHECK ERROR: the model command failed in /opt/resources/ip_models/aes128: python3 /tmp/ip_work/arch/model_cli.py block state_reg 3925841d02dc09fbdc118597196a0b32 051fd1e86ce317c1d1924d92bd3db8c0 1\nunknown block: state_reg\nThe command is run as: COMMAND followed by the probed input values in hex, in the order of --in (a constant is written =VALUE after --in). Each block takes the inputs listed below, in that order.\nBlocks of the validated model (/opt/resources/ip_models/aes128/BLOCKS.txt):\ncommand (run in this folder): python3 aes128_model.py block NAME INPUT [INPUT ...]     every value in hex\n  NAME              inputs (in this order)                          output\n  add_round_key     state (32 digits), round key (32 digits)        state\n  inv_shift_rows    state (32 digits)                               state\n  inv_sub_bytes     state (32 digits)                               state\n  inv_mix_columns   state (32 digits)                               state\n  inv_mix_column    one column (8 digits, row 0 first)              column\n  next_round_key    round key N-1 (32 digits), N (1..10)            round key N\n  rot_word          word (8 digits)                                 word\n  sub_word          word (8 digits)                                 word\n  xtime             byte (2 digits)                                 byte      (multiplication by 02)\n  gmul              byte, byte (2 digits each)                      byte      (product in GF(2^8))\nstate and round key: byte n of the 32 digits is row (n mod 4), column (n div 4). Check which order the RTL signal uses.\nuse with:  rtl blockcheck --in INPUT_SIGNAL [INPUT_SIGNAL | =CONSTANT ...] --out OUTPUT_SIGNAL --model \"python3 aes128_model.py block NAME\"\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "input_check": {
+  "steps": 11,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 11,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "state_in": null,
+    "state_next": "e9317db5cb322c723d2e895faf090794",
+    "load_sel": null
+   }
+  }
+ }
+}

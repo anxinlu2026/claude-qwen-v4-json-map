@@ -1,0 +1,182 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk1",
+ "name": "state_reg",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_decrypt.sv",
+   "lines": "54-81",
+   "kind": "always_ff",
+   "drives": [
+    "current_data_ff",
+    "round_ff"
+   ],
+   "source": "54: always_ff @(posedge clk or negedge rst_async_n) begin : inv_cypher_regs / 77: current_data_ff[i][j] <= current_data_nx[i][j];"
+  },
+  {
+   "file": "aes128_decrypt.sv",
+   "lines": "83-101",
+   "kind": "always_comb",
+   "drives": [
+    "current_data_nx"
+   ],
+   "source": "89: if(round_ff != 0) begin ... 96: current_data_nx[i][j] = current_data_ff[i][j];(round_ff==0 時保持)"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "state_in",
+    "upstream": "blk0 輸出 → current_data_nx 的載入分支(line 87)",
+    "arch_connected_to": "load_block.state_in",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.i_data",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "i_start & o_done (line 86)",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 87: current_data_nx[i][j] = i_data[...]",
+     "unknown": [
+      "signal 填 i_data(載入分支來源);RTL 無只屬載入路徑的訊號"
+     ]
+    }
+   },
+   {
+    "arch_port": "state_next",
+    "upstream": "blk13 輸出 → current_data_nx 的 round_ff 分支(line 91/93)",
+    "arch_connected_to": "round_mux.state_next",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff != 0(RTL 還有 round_ff==12 的情形)",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 91: current_data_nx[i][j] = SubBytes[i][j]; / 93: current_data_nx[i][j] = AddRoundKey[i][j];",
+     "unknown": [
+      "signal 為 current_data_nx 整體(含載入與保持分支)"
+     ]
+    }
+   },
+   {
+    "arch_port": "load_sel",
+    "upstream": "round_counter 的 start_accept → RTL 條件 i_start & o_done",
+    "arch_connected_to": "round_counter.start_accept",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.i_start",
+     "width": 1,
+     "kind": "level",
+     "valid_when": "i_start & o_done (line 63/86)",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 63: if(i_start & o_done) begin",
+     "unknown": [
+      "RTL 無名為 load_sel 的訊號,signal 欄填 i_start(實際條件是 i_start 與 o_done 的 AND)"
+     ]
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "q",
+    "downstream": "blk9/blk10 沒有直接用暫存器(見 q1)、blk14 的 o_data(line 49)、line 119 的 AddRoundKey",
+    "arch_connected_to": "add_round_key.state, inv_shift_rows.state, output_map.q",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_ff[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "reset 後 0;每個時脈更新",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 1,
+     "latency_max_cycles": 1,
+     "source": "aes128_decrypt.sv 77: current_data_ff[i][j] <= current_data_nx[i][j];(signal 為依架構位元組序併接的 current_data_ff)",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 0,
+   "match": 0,
+   "mismatch": 0,
+   "raw": "tool-blk1-check-v0.json"
+  },
+  "input_check": {
+   "rows": 11,
+   "match": 0,
+   "mismatch": 11,
+   "raw": "tool-blk1-check-v0.json"
+  }
+ },
+ "confidence": {
+  "level": "low",
+  "reason": "model.py 的 state_reg 沒有 CLI,harness 無法比對(rtl blockcheck 回傳方塊名稱表,0 列);只有靜態對應"
+ },
+ "difficulty": {
+  "level": "medium",
+  "reason": "暫存器與載入/保持/回合三種來源合在同一個 always_comb"
+ },
+ "control": {
+  "assessment": "suspect",
+  "items": [
+   {
+    "item": "更新時序/保持",
+    "expected": "load_sel→載入;round_cnt!=0→state_next;否則保持;reset 為 0(arch-blk1-model-v0.json function_text)",
+    "observed": "結構相符:line 86-98 依序為載入、round_ff!=0 時 SubBytes 或 AddRoundKey、否則保持;reset 清 0(line 59);但 round_ff 在無 start 時自行 0→2,故 current_data_ff 在沒有載入時就被更新",
+    "verdict": "suspect",
+    "evidence": "aes128_decrypt.sv 56-60, 86-98; rtl probe (RUN #17) rows: t=5 round_ff=0 o_done=1 | t=15 round_ff=2 o_done=0 | t=25 i_start=1 i_update_key=1 round_ff=3 o_done=0 | t=35..115 round_ff=4..c | t=125 round_ff=0 o_done=1 | t=135 i_start=1 round_ff=2 o_done=0 | t=145..235 round_ff=3..c | t=245 round_ff=0 o_done=1"
+   },
+   {
+    "item": "q 的暫存器切點",
+    "expected": "arch:q 在 round_mux(ARK/IMC 之後)輸出被暫存,下一回合從 InvShiftRows 開始",
+    "observed": "RTL:暫存器存的是 InvSubBytes 的輸出(line 91),下一回合從 AddRoundKey 開始",
+    "verdict": "suspect",
+    "evidence": "aes128_decrypt.sv 91, 119, 145-148, 153-174"
+   }
+  ]
+ },
+ "questions": [
+  {
+   "id": "q1",
+   "text": "RTL 每個時脈做 AddRoundKey→InvMixColumns→InvShiftRows→InvSubBytes 再進暫存器(decrypt.sv 114-175、91);架構模型的每回合順序是 InvShiftRows→InvSubBytes→AddRoundKey→InvMixColumns 且暫存器在回合末。暫存器切點不同時,方塊 blk9..blk13 的輸入/輸出在 RTL 中對應的訊號是否仍要與 harness 的 state_reg.q 逐步相等?請問架構:要以哪一種切法為準?",
+   "refs": [
+    "aes128_decrypt.sv:91",
+    "aes128_decrypt.sv:114-175",
+    "arch-top-model-v0.json#connections"
+   ]
+  }
+ ],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "RTL 的回合切點與架構不同(暫存器在 InvSubBytes 之後,而非 AddRoundKey/InvMixColumns 之後),所以 harness 的 state_next 步驟值不會在 RTL 的 current_data_nx 上逐步出現。",
+   "evidence": "decrypt.sv 91 vs arch-blk13-model-v0.json function_text;input check 0/11",
+   "status": "open"
+  }
+ ],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "open",
+ "unknown": [
+  "state_reg 的 harness 比對:model.py 沒有 CLI,function check 0 列",
+  "load_sel 與 state_in 沒有獨立 RTL 訊號"
+ ],
+ "no_change": false
+}

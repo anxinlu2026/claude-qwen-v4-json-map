@@ -1,0 +1,102 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk7",
+ "name": "word_xor_chain",
+ "order": 7,
+ "function_text": "model.py:next_round_key (second half) -> w0 = prev[0:4]^t; w1 = prev[4:8]^w0; w2 = prev[8:12]^w1; w3 = prev[12:16]^w2, output 16 bytes w0||w1||w2||w3. CLI: word_xor_chain <prev_round_key 32 hex> <t 8 hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "prev_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.prev_round_key"
+   },
+   {
+    "name": "t",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "rcon_step.t"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "next_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.next_round_key"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "next_round_key",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "w0' = w0 ^ t; w1' = w1 ^ w0'; w2' = w2 ^ w1'; w3' = w3 ^ w2'",
+   "spec_ref": "FIPS 197 Sec 5.2"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "next_round_key"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "doubt",
+   "text": "與 blk3 a2 相同的原始證據(字 0 與字 2 互換)。blk4/5/6 全 match,所以懷疑集中在 XOR 鏈的字序/鏈接,而非 t。這是 H 的位置,不是根因結論。",
+   "basis": "hdl_report",
+   "refs": [
+    "hdl-blk7-rtl-v0.json#h1",
+    "tool-blk7-check-v0.json"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "suggestion",
+   "text": "請說明 RTL 中每個輸出字的 XOR 運算元來源(上一把金鑰的哪個字、是否用同一組已算出的字),附行號與原文,供我比對 FIPS 197 的鏈接形式。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.2"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "h1",
+   "decision": "model_kept",
+   "reason": "標準的字鏈接;支持此方塊的行為應是 w1' = w1 ^ w0' 等。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.2"
+   ]
+  }
+ ],
+ "status": "suspect",
+ "no_change": false
+}

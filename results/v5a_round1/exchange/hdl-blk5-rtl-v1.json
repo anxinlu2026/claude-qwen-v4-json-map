@@ -1,0 +1,110 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 1,
+ "block": "blk5",
+ "name": "sub_word",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "79-97",
+   "kind": "instance",
+   "drives": [
+    "steps[2].SubWord"
+   ],
+   "source": "79: sbox uu_sbox0 (.i_data(RotWord[NBW_WORD-1-:NBW_BYTE]), .o_data(SubWord[NBW_WORD-1-:NBW_BYTE]));(uu_sbox0..3 共四個)"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "rot",
+    "upstream": "steps[2].RotWord(blk4)",
+    "arch_connected_to": "rot_word.rot",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 80: .i_data(RotWord[NBW_WORD-1-:NBW_BYTE]),",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "sub",
+    "downstream": "steps[2].RconXor 的輸入(line 101)(blk6)",
+    "arch_connected_to": "rcon_step.sub",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 82: .o_data(SubWord[NBW_WORD-1-:NBW_BYTE])",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 39,
+   "match": 39,
+   "mismatch": 0,
+   "raw": "tool-blk5-check-v1.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 1,
+   "mismatch": 9,
+   "raw": "tool-blk5-check-v1.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "10 個實例 function check 全 match;輸入來自全 0 金鑰衍生值"
+ },
+ "difficulty": {
+  "level": "easy",
+  "reason": "四個 sbox 實例"
+ },
+ "control": {
+  "assessment": "consistent",
+  "items": [
+   {
+    "item": "控制時序(被接受的 start)",
+    "expected": "arch schedule:update 情形 row0 start、row1–10 金鑰展開、row11 key_done=1 且 round=1、round 1..11 於 row 11–21、row 22 o_done=1;no_update 情形 round 1..11 於 row 1–11、row 12 o_done=1",
+    "observed": "RUN #199:t=25 start 被接受;key_done=1 從 t=135(row 11);round_ff 1(等待)…b 於 t=135…235;t=245(row 22)round_ff=0、o_done=1;第二次 start 之後 round 1 於下一列。RUN #236 testbench PASS ×2",
+    "verdict": "consistent",
+    "evidence": "rtl probe RUN #199;RUN #236 'result: PASS (0 FAIL, 2 PASS)'"
+   }
+  ]
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [
+  {
+   "replies_to": "a1",
+   "text": "同意。本輪此方塊的 RTL 行未修改;harness_result 沿用 v0(tool-blk5-check-v0.json),輸入來自 start 未被接受的自走資料。"
+  }
+ ],
+ "rtl_changes": [],
+ "status": "open",
+ "unknown": [
+  "sbox.sv 的完整表是否每個項目正確:只由 function check 經過的值間接覆蓋,未逐項檢查"
+ ],
+ "no_change": true
+}

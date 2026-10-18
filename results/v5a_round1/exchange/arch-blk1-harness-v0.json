@@ -1,0 +1,127 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk1",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 1,
+   "model_condition": "round_cnt = 1",
+   "inputs": {
+    "state_next": "e9317db5cb322c723d2e895faf090794"
+   },
+   "outputs": {
+    "state": "e9317db5cb322c723d2e895faf090794"
+   }
+  },
+  {
+   "step": 2,
+   "model_condition": "round_cnt = 2",
+   "inputs": {
+    "state_next": "876e46a6f24ce78c4d904ad897ecc395"
+   },
+   "outputs": {
+    "state": "876e46a6f24ce78c4d904ad897ecc395"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "round_cnt = 3",
+   "inputs": {
+    "state_next": "be3bd4fed4e1f2c80a642cc0da83864d"
+   },
+   "outputs": {
+    "state": "be3bd4fed4e1f2c80a642cc0da83864d"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "round_cnt = 4",
+   "inputs": {
+    "state_next": "f783403f27433df09bb531ff54aba9d3"
+   },
+   "outputs": {
+    "state": "f783403f27433df09bb531ff54aba9d3"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "round_cnt = 5",
+   "inputs": {
+    "state_next": "a14f3dfe78e803fc10d5a8df4c632923"
+   },
+   "outputs": {
+    "state": "a14f3dfe78e803fc10d5a8df4c632923"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "round_cnt = 6",
+   "inputs": {
+    "state_next": "e1fb967ce8c8ae9b356cd2ba974ffb53"
+   },
+   "outputs": {
+    "state": "e1fb967ce8c8ae9b356cd2ba974ffb53"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "round_cnt = 7",
+   "inputs": {
+    "state_next": "52a4c89485116a28e3cf2fd7f6505e07"
+   },
+   "outputs": {
+    "state": "52a4c89485116a28e3cf2fd7f6505e07"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "round_cnt = 8",
+   "inputs": {
+    "state_next": "acc1d6b8efb55a7b1323cfdf457311b5"
+   },
+   "outputs": {
+    "state": "acc1d6b8efb55a7b1323cfdf457311b5"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "round_cnt = 9",
+   "inputs": {
+    "state_next": "49db873b453953897f02d2f177de961a"
+   },
+   "outputs": {
+    "state": "49db873b453953897f02d2f177de961a"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "round_cnt = 10",
+   "inputs": {
+    "state_next": "d4bf5d30e0b452aeb84111f11e2798e5"
+   },
+   "outputs": {
+    "state": "d4bf5d30e0b452aeb84111f11e2798e5"
+   }
+  },
+  {
+   "step": 11,
+   "model_condition": "round_cnt = 11",
+   "inputs": {
+    "state_next": "3243f6a8885a308d313198a2e0370734"
+   },
+   "outputs": {
+    "state": "3243f6a8885a308d313198a2e0370734"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "q holds: ciphertext after start edge; then result of the previous step; plaintext after round 11",
+   "type": "registered"
+  }
+ ],
+ "register_expected": []
+}

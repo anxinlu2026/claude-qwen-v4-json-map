@@ -1,0 +1,167 @@
+{
+ "block": "blk13",
+ "name": "round_mux",
+ "round": 0,
+ "time": "2026-10-18 17:25:18",
+ "inputs_in_model_order": [
+  "initial_path",
+  "round_path",
+  "final_path",
+  "round_cnt"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+  "tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3]",
+  "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+  "tb_aes128_dec.uu_aes128_decrypt.round_ff"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3] tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3] tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3] tb_aes128_dec.uu_aes128_decrypt.round_ff --out tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][3] --model python3 /tmp/ip_work/arch/model_cli.py block round_mux --max 40 --when round_ff != 0",
+  "rows": 23,
+  "match": 2,
+  "mismatch": 19,
+  "raw": "                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              c1bfe37b4f3ae2d155a516c49e9044f5 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                71a11100edadab9e21e44063e551e8e3 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                c1bfe37b4f3ae2d155a516c49e9044f5 |                                        2 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      2c18724d53aec8527b70e3df2af10e00 | 71a11100edadab9e21e44063e551e8e3 |            MISMATCH\nRESULT: 2 of 21 compared row(s) match the model.\ncurrent_data_nx: recorded as mismatch. With the inputs it actually receives, this block does not give the model's output: the fault is inside it. If it is more than one driver, break it down (blockcheck its parts); at a single driver, fix that driver.\n",
+  "xor_of_rtl_and_model_by_byte": [
+   {
+    "t": 15,
+    "xor_per_byte": [
+     "9f",
+     "c4",
+     "48",
+     "00",
+     "65",
+     "42",
+     "4a",
+     "ef",
+     "73",
+     "de",
+     "b7",
+     "87",
+     "63",
+     "3d",
+     "3f",
+     "3f"
+    ]
+   },
+   {
+    "t": 25,
+    "xor_per_byte": [
+     "6e",
+     "38",
+     "32",
+     "90",
+     "3c",
+     "23",
+     "7b",
+     "8e",
+     "ef",
+     "83",
+     "73",
+     "28",
+     "c7",
+     "72",
+     "48",
+     "5b"
+    ]
+   },
+   {
+    "t": 35,
+    "xor_per_byte": [
+     "63",
+     "c4",
+     "6a",
+     "7d",
+     "cf",
+     "af",
+     "5d",
+     "f1",
+     "21",
+     "f7",
+     "56",
+     "ca",
+     "da",
+     "e3",
+     "00",
+     "3b"
+    ]
+   },
+   {
+    "t": 45,
+    "xor_per_byte": [
+     "90",
+     "ce",
+     "be",
+     "09",
+     "2d",
+     "3b",
+     "16",
+     "19",
+     "82",
+     "9a",
+     "d7",
+     "d6",
+     "1a",
+     "cb",
+     "7e",
+     "5f"
+    ]
+   },
+   {
+    "t": 55,
+    "xor_per_byte": [
+     "20",
+     "bc",
+     "67",
+     "cb",
+     "a0",
+     "64",
+     "68",
+     "2d",
+     "be",
+     "cb",
+     "58",
+     "c8",
+     "e7",
+     "56",
+     "65",
+     "10"
+    ]
+   },
+   {
+    "t": 65,
+    "xor_per_byte": [
+     "b1",
+     "4a",
+     "a3",
+     "0b",
+     "df",
+     "36",
+     "42",
+     "c1",
+     "6f",
+     "86",
+     "5f",
+     "9f",
+     "38",
+     "12",
+     "2f",
+     "32"
+    ]
+   }
+  ]
+ },
+ "input_check": {
+  "steps": 11,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 11,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "initial_path": "e9317db5cb322c723d2e895faf090794",
+    "round_path": "n/a",
+    "final_path": "n/a",
+    "round_cnt": 1
+   }
+  }
+ }
+}

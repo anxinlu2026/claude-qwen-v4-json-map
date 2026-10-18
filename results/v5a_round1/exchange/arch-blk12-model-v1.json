@@ -1,0 +1,92 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk12",
+ "name": "inv_mix_columns",
+ "order": 12,
+ "function_text": "model.py:inv_mix_columns(state: 16 bytes) -> per column c (bytes 4c..4c+3 = rows 0..3): out_r = 0E*a_r ^ ... with matrix rows [0E 0B 0D 09; 09 0E 0B 0D; 0D 09 0E 0B; 0B 0D 09 0E] applied to (a0,a1,a2,a3), GF(2^8) mod 0x11B. CLI: inv_mix_columns <state 32 hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_mux.round_path"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_out column c",
+   "type": "combinational",
+   "width": 32,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "out0 = 0e a0 ^ 0b a1 ^ 0d a2 ^ 09 a3;out1 = 09 a0 ^ 0e a1 ^ 0b a2 ^ 0d a3;out2 = 0d a0 ^ 09 a1 ^ 0e a2 ^ 0b a3;out3 = 0b a0 ^ 0d a1 ^ 09 a2 ^ 0e a3(GF(2^8)))",
+   "spec_ref": "FIPS 197 Sec 5.3.3"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "inv_mix_columns"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "doubt",
+   "text": "h1(列組合不同):依標準矩陣 [0e 0b 0d 09; 09 0e 0b 0d; 0d 09 0e 0b; 0b 0d 09 0e],每一個輸出 byte 是四個不同輸入 byte 各乘一個係數。你引用的 RTL 第 145 行有兩項是同一個輸入 byte(a_r 同時乘 0e 與 09)且缺 a_(r+1)(依你的轉述);請對照 FIPS 197 Eq. 5.19 檢查。function check 21 列全 mismatch,與此一致,但 mismatch 的列輸入來自自走資料,所以先標 suspect。",
+   "basis": "hdl_report",
+   "refs": [
+    "hdl-blk12-rtl-v0.json#h1",
+    "tool-blk12-check-v0.json",
+    "FIPS 197 Sec 5.3.3"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "answer",
+   "replies_to": "q1",
+   "text": "q1:見 blk1 a1。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk12-rtl-v0.json#q1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "h1",
+   "decision": "model_kept",
+   "reason": "反向 MixColumns 的矩陣是標準規定。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3.3"
+   ]
+  }
+ ],
+ "status": "suspect",
+ "no_change": false
+}

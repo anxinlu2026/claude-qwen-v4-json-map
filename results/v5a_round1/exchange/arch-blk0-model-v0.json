@@ -1,0 +1,49 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk0",
+ "name": "load_block",
+ "order": 0,
+ "function_text": "model.py:load_block(i_data:int128) -> list of 16 bytes. byte n = i_data[127-8n -: 8] (n = 0..15), state row n%4, column n//4. CLI: model_cli.py block load_block <i_data 32 hex> -> 32 hex, identical digits (pure wiring).",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "i_data",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0 (start row)",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "design port.i_data"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_in",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0; captured by state_reg at the start edge",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.state_in"
+   }
+  ]
+ },
+ "elements": [],
+ "python": {
+  "module": "model.py",
+  "function": "load_block"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "open",
+ "no_change": false
+}

@@ -1,0 +1,240 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 1,
+ "block": "blk13",
+ "name": "round_mux",
+ "active_when": "round_ff != 0",
+ "rtl_map": [
+  {
+   "file": "aes128_decrypt.sv",
+   "lines": "83-101",
+   "kind": "always_comb",
+   "drives": [
+    "current_data_nx"
+   ],
+   "source": "89: if(round_ff != 0) begin / 90: if(round_ff != 11) begin / 91: current_data_nx[i][j] = SubBytes[i][j]; / 93: current_data_nx[i][j] = AddRoundKey[i][j];"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "initial_path",
+    "upstream": "AddRoundKey(round 1)",
+    "arch_connected_to": "add_round_key.state_out",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff = 1(RTL 從未出現)",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 119",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "round_path",
+    "upstream": "MixColumns",
+    "arch_connected_to": "inv_mix_columns.state_out",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff 2..10(RTL 無此分支)",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 145-148",
+     "unknown": [
+      "RTL 沒有這條獨立路徑,MixColumns 是 SubBytes 鏈的上游"
+     ]
+    }
+   },
+   {
+    "arch_port": "final_path",
+    "upstream": "AddRoundKey(round 11)",
+    "arch_connected_to": "add_round_key.state_out",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff = 11",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 93: current_data_nx[i][j] = AddRoundKey[i][j];",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "round_cnt",
+    "upstream": "round_ff",
+    "arch_connected_to": "round_counter.round_cnt",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.round_ff",
+     "width": 4,
+     "kind": "data",
+     "valid_when": "always",
+     "clock": "clk",
+     "edge": "rising",
+     "storage": "register",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 38: logic [3:0]            round_ff;",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "state_next",
+    "downstream": "current_data_nx → current_data_ff(blk1)",
+    "arch_connected_to": "state_reg.state_next",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][0]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][1]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][2]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[0][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[1][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[2][3]+tb_aes128_dec.uu_aes128_decrypt.current_data_nx[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff != 0 且不是載入",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 91, 93",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 32,
+   "match": 2,
+   "mismatch": 30,
+   "raw": "tool-blk13-check-v1.json"
+  },
+  "input_check": {
+   "rows": 11,
+   "match": 9,
+   "mismatch": 2,
+   "raw": "tool-blk13-check-v1.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "function check 仍為 2 match 30 mismatch(RTL 沒有三選一多工,切點平移,架構 a1 同意不採用);input check 9/11;端到端 testbench PASS 與第 1 拍動態值支持"
+ },
+ "difficulty": {
+  "level": "hard",
+  "reason": "架構的『回合函式』在 RTL 是一條串聯鏈,多工只有最後一格"
+ },
+ "control": {
+  "assessment": "consistent",
+  "items": [
+   {
+    "item": "控制時序(被接受的 start)",
+    "expected": "arch schedule:update 情形 row0 start、row1–10 金鑰展開、row11 key_done=1 且 round=1、round 1..11 於 row 11–21、row 22 o_done=1;no_update 情形 round 1..11 於 row 1–11、row 12 o_done=1",
+    "observed": "RUN #199:t=25 start 被接受;key_done=1 從 t=135(row 11);round_ff 1(等待)…b 於 t=135…235;t=245(row 22)round_ff=0、o_done=1;第二次 start 之後 round 1 於下一列。RUN #236 testbench PASS ×2",
+    "verdict": "consistent",
+    "evidence": "rtl probe RUN #199;RUN #236 'result: PASS (0 FAIL, 2 PASS)'"
+   }
+  ]
+ },
+ "questions": [
+  {
+   "id": "q1",
+   "text": "RTL 沒有 3 路 round_mux,只有 SubBytes/AddRoundKey/保持。第 0 輪的 harness 比對(23 列,2 match 19 mismatch)是否仍有意義?或請架構重新定義 blk13 在 RTL 的對應。",
+   "refs": [
+    "aes128_decrypt.sv:91",
+    "aes128_decrypt.sv:114-175",
+    "arch-top-model-v0.json#connections"
+   ]
+  },
+  {
+   "id": "q2",
+   "text": "round_ff 在 RTL 會到 12 並多執行一次 SubBytes 分支(line 68-69、90-91),架構的 round_cnt 只有 1..11。這個額外一列是否應視為架構與 RTL 的差異?",
+   "refs": [
+    "aes128_decrypt.sv:68-69",
+    "aes128_decrypt.sv:90-91"
+   ]
+  }
+ ],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "round_ff=1 時多套了 InvMixColumns",
+   "evidence": "見 c2;已修正",
+   "status": "supported"
+  }
+ ],
+ "replies": [
+  {
+   "replies_to": "a2",
+   "text": "已移除 round_ff=12 這拍:round 1..11 後回 0,o_done 在 row 22,o_data 為明文(testbench PASS)。"
+  },
+  {
+   "replies_to": "a3",
+   "text": "h1 成立:round_ff=1 那拍原本存入含 InvMixColumns 的值(c65106…),已改為 eb40f2…(c2)。"
+  },
+  {
+   "replies_to": "a1",
+   "text": "接受以整鏈功能比對。"
+  }
+ ],
+ "rtl_changes": [
+  {
+   "id": "c1",
+   "based_on": "a3",
+   "file": "aes128_decrypt.sv",
+   "lines": "63-73",
+   "before": "round_ff 在 else 分支 '<= 4'd2'(待機自行離開 0),>1&&<12 或 key_done 時遞增,到 12 才回 0",
+   "after": "start 接受→1;round_ff==1 且 !key_done 保持;round_ff==0 保持 0;<11 遞增;其餘回 0",
+   "reason": "架構 top a0/a3;RUN #195 待機時 round_ff 0→2…c;修改後 RUN #199:t=25 start 被接受,round_ff 1(等 key_done)→t=135(row 11)起 1..b,t=245(row 22)round_ff=0、o_done=1,與 arch schedule update 一致",
+   "harness_after": {
+    "function_check": {
+     "match": 2,
+     "mismatch": 30
+    },
+    "input_check": {
+     "match": 9,
+     "mismatch": 2
+    }
+   },
+   "status": "applied"
+  },
+  {
+   "id": "c2",
+   "based_on": "a3",
+   "file": "aes128_decrypt.sv",
+   "lines": "147-170",
+   "before": "ShiftRows 的輸入固定為 MixColumns",
+   "after": "ShiftRows 的每個來源改為 (round_ff == 4'd1 ? AddRoundKey[r][c] : MixColumns[r][c])(同時含 blk10 的反向列移位)",
+   "reason": "標準初始步驟只有 AddRoundKey。動態證據:t=135 現況 current_data_nx=c65106c803cb957e5c215223c88212fe = InvSubBytes(InvShiftRows(InvMixColumns(ARK))),期望 eb40f21e592e38848ba113e71bc342d2 = InvSubBytes(InvShiftRows(ARK))(model_cli 計算);修改後 testbench PASS ×2",
+   "harness_after": {
+    "function_check": {
+     "match": 2,
+     "mismatch": 30
+    },
+    "input_check": {
+     "match": 9,
+     "mismatch": 2
+    }
+   },
+   "status": "applied"
+  }
+ ],
+ "status": "aligned",
+ "unknown": [
+  "round_mux 的逐路功能比對不適用(架構 a1);合併鏈的正確性由 testbench PASS 與各運算 function check 支持"
+ ],
+ "no_change": false
+}

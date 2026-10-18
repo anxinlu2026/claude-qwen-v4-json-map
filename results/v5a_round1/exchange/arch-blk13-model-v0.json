@@ -1,0 +1,85 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk13",
+ "name": "round_mux",
+ "order": 13,
+ "function_text": "model.py:round_step(state, rk, r) selects: r = 1 -> add_round_key(state, rk[10]); r = 2..10 -> inv_mix_columns(add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[11-r])); r = 11 -> add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[0]). CLI (selection only): round_mux <initial_path 32 hex> <round_path 32 hex> <final_path 32 hex> <round_cnt hex> -> the path chosen by round_cnt (1: initial, 2..10: round, 11: final), 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "initial_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   },
+   {
+    "name": "round_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_mix_columns.state_out"
+   },
+   {
+    "name": "final_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   },
+   {
+    "name": "round_cnt",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "always",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_counter.round_cnt"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_next",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.state_next"
+   }
+  ]
+ },
+ "elements": [],
+ "python": {
+  "module": "model.py",
+  "function": "round_step"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "open",
+ "no_change": false
+}

@@ -1,0 +1,137 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 1,
+ "block": "blk6",
+ "name": "rcon_step",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "62-71",
+   "kind": "assign",
+   "drives": [
+    "Rcon[0..9]"
+   ],
+   "source": "62: assign Rcon[0] = 8'h01; ... 71: assign Rcon[9] = 8'h36;"
+  },
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "101",
+   "kind": "always_comb",
+   "drives": [
+    "steps[2].RconXor"
+   ],
+   "source": "101: RconXor = {SubWord[NBW_WORD-1-:NBW_BYTE]^Rcon[i], SubWord[NBW_WORD-NBW_BYTE-1-:(NBW_WORD-NBW_BYTE)]};"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "sub",
+    "upstream": "steps[2].SubWord(blk5)",
+    "arch_connected_to": "sub_word.sub",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "n",
+    "upstream": "steps 的索引 i(Rcon[i]);n=i+1",
+    "arch_connected_to": "key_expand_step.n",
+    "rtl": {
+     "signal": "=3",
+     "width": 4,
+     "kind": "held",
+     "valid_when": "常數",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101: ^Rcon[i]",
+     "unknown": [
+      "n 以 harness 常數 =3 代入,RTL 無 n 訊號"
+     ]
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "t",
+    "downstream": "steps[2].RconXor(→ line 103 的 XOR)",
+    "arch_connected_to": "word_xor_chain.t",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 101",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 39,
+   "match": 39,
+   "mismatch": 0,
+   "raw": "tool-blk6-check-v1.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 1,
+   "mismatch": 9,
+   "raw": "tool-blk6-check-v1.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "10 個實例 function check 全 match(含 n=1..10);輸入來自全 0 金鑰衍生值"
+ },
+ "difficulty": {
+  "level": "easy",
+  "reason": "常數表加一個位元組 XOR"
+ },
+ "control": {
+  "assessment": "consistent",
+  "items": [
+   {
+    "item": "控制時序(被接受的 start)",
+    "expected": "arch schedule:update 情形 row0 start、row1–10 金鑰展開、row11 key_done=1 且 round=1、round 1..11 於 row 11–21、row 22 o_done=1;no_update 情形 round 1..11 於 row 1–11、row 12 o_done=1",
+    "observed": "RUN #199:t=25 start 被接受;key_done=1 從 t=135(row 11);round_ff 1(等待)…b 於 t=135…235;t=245(row 22)round_ff=0、o_done=1;第二次 start 之後 round 1 於下一列。RUN #236 testbench PASS ×2",
+    "verdict": "consistent",
+    "evidence": "rtl probe RUN #199;RUN #236 'result: PASS (0 FAIL, 2 PASS)'"
+   }
+  ]
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [
+  {
+   "replies_to": "a1",
+   "text": "同意。本輪此方塊的 RTL 行未修改;harness_result 沿用 v0(tool-blk6-check-v0.json),輸入來自 start 未被接受的自走資料。"
+  }
+ ],
+ "rtl_changes": [],
+ "status": "open",
+ "unknown": [],
+ "no_change": true
+}

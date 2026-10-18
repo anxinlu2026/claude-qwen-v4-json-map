@@ -1,0 +1,98 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk8",
+ "name": "round_key_select",
+ "active_when": "TODO",
+ "rtl_map": [
+  {
+   "file": "TODO",
+   "lines": "TODO",
+   "kind": "TODO",
+   "drives": [],
+   "source": "TODO"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "rk_all",
+    "upstream": "TODO",
+    "arch_connected_to": "round_key_store.rk_all",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   },
+   {
+    "arch_port": "round_cnt",
+    "upstream": "TODO",
+    "arch_connected_to": "round_counter.round_cnt",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "round_key",
+    "downstream": "TODO",
+    "arch_connected_to": "add_round_key.round_key",
+    "rtl": {
+     "signal": "TODO",
+     "width": "TODO",
+     "kind": "TODO",
+     "valid_when": "TODO",
+     "clock": "TODO",
+     "edge": "TODO",
+     "storage": "TODO",
+     "latency_min_cycles": "TODO",
+     "latency_max_cycles": "TODO",
+     "source": "TODO",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {},
+ "confidence": {
+  "level": "TODO",
+  "reason": "TODO"
+ },
+ "difficulty": {
+  "level": "TODO",
+  "reason": "TODO"
+ },
+ "control": {
+  "assessment": "TODO",
+  "items": []
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "TODO",
+ "unknown": [],
+ "no_change": false
+}

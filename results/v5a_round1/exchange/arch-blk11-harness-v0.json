@@ -1,0 +1,117 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk11",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 2,
+   "model_condition": "round_cnt = 2",
+   "inputs": {
+    "state": "e9098972cb31075f3d327d94af2e2cb5"
+   },
+   "outputs": {
+    "state_out": "eb40f21e592e38848ba113e71bc342d2"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "round_cnt = 3",
+   "inputs": {
+    "state": "87ec4a8cf26ec3d84d4c46959790e7a6"
+   },
+   "outputs": {
+    "state_out": "ea835cf00445332d655d98ad8596b0c5"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "round_cnt = 4",
+   "inputs": {
+    "state": "be832cc8d43b86c00ae1d44dda64f2fe"
+   },
+   "outputs": {
+    "state_out": "5a4142b11949dc1fa3e019657a8c040c"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "round_cnt = 5",
+   "inputs": {
+    "state": "f7ab31f02783a9ff9b4340d354b53d3f"
+   },
+   "outputs": {
+    "state_out": "260e2e173d41b77de86472a9fdd28b25"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "round_cnt = 6",
+   "inputs": {
+    "state": "a163a8fc784f29df10e83d234cd503fe"
+   },
+   "outputs": {
+    "state_out": "f1006f55c1924cef7cc88b325db5d50c"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "round_cnt = 7",
+   "inputs": {
+    "state": "e14fd29be8fbfbba35c89653976cae7c"
+   },
+   "outputs": {
+    "state_out": "e0927fe8c86363c0d9b1355085b8be01"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "round_cnt = 8",
+   "inputs": {
+    "state": "52502f2885a45ed7e311c807f6cf6a94"
+   },
+   "outputs": {
+    "state_out": "486c4eee671d9d0d4de3b138d65f58e7"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "round_cnt = 9",
+   "inputs": {
+    "state": "ac73cf7befc111df13b5d6b545235ab8"
+   },
+   "outputs": {
+    "state_out": "aa8f5f0361dde3ef82d24ad26832469a"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "round_cnt = 10",
+   "inputs": {
+    "state": "49ded28945db96f17f39871a7702533b"
+   },
+   "outputs": {
+    "state_out": "a49c7ff2689f352b6b5bea43026a5049"
+   }
+  },
+  {
+   "step": 11,
+   "model_condition": "round_cnt = 11",
+   "inputs": {
+    "state": "d42711aee0bf98f1b8b45de51e415230"
+   },
+   "outputs": {
+    "state_out": "193de3bea0f4e22b9ac68d2ae9f84808"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "round_cnt = 2..11",
+   "type": "combinational"
+  }
+ ],
+ "register_expected": []
+}

@@ -1,0 +1,187 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 1,
+ "block": "blk12",
+ "name": "inv_mix_columns",
+ "active_when": "round_ff != 0",
+ "rtl_map": [
+  {
+   "file": "aes128_decrypt.sv",
+   "lines": "126-149",
+   "kind": "always_comb",
+   "drives": [
+    "xtimes02",
+    "xtimes04",
+    "xtimes08",
+    "xtimes09",
+    "xtimes0b",
+    "xtimes0d",
+    "xtimes0e",
+    "MixColumns"
+   ],
+   "source": "145: MixColumns[0][i] = xtimes0e[0][i] ^ xtimes0b[2][i] ^ xtimes0d[3][i] ^ xtimes09[0][i];"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "state",
+    "upstream": "AddRoundKey(blk9)",
+    "arch_connected_to": "add_round_key.state_out",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][0]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][1]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][2]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[0][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[1][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[2][3]+tb_aes128_dec.uu_aes128_decrypt.AddRoundKey[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff != 0(RTL 無 round_ff 範圍閘控)",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 129-143: AddRoundKey[i][j] ...",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "state_out",
+    "downstream": "MixColumns → ShiftRows(line 153-174,blk10)",
+    "arch_connected_to": "round_mux.round_path",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][0]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][1]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][2]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[0][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[1][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[2][3]+tb_aes128_dec.uu_aes128_decrypt.MixColumns[3][3]",
+     "width": 128,
+     "kind": "data",
+     "valid_when": "round_ff != 0",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_decrypt.sv 145-148",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 32,
+   "match": 32,
+   "mismatch": 0,
+   "raw": "tool-blk12-check-v1.json"
+  },
+  "input_check": {
+   "rows": 9,
+   "match": 9,
+   "mismatch": 0,
+   "raw": "tool-blk12-check-v1.json"
+  }
+ },
+ "confidence": {
+  "level": "high",
+  "reason": "被接受的 start 下 32/32 match,input check 9/9"
+ },
+ "difficulty": {
+  "level": "medium",
+  "reason": "xtimes 鏈與四項 GF 乘加"
+ },
+ "control": {
+  "assessment": "consistent",
+  "items": [
+   {
+    "item": "控制時序(被接受的 start)",
+    "expected": "arch schedule:update 情形 row0 start、row1–10 金鑰展開、row11 key_done=1 且 round=1、round 1..11 於 row 11–21、row 22 o_done=1;no_update 情形 round 1..11 於 row 1–11、row 12 o_done=1",
+    "observed": "RUN #199:t=25 start 被接受;key_done=1 從 t=135(row 11);round_ff 1(等待)…b 於 t=135…235;t=245(row 22)round_ff=0、o_done=1;第二次 start 之後 round 1 於下一列。RUN #236 testbench PASS ×2",
+    "verdict": "consistent",
+    "evidence": "rtl probe RUN #199;RUN #236 'result: PASS (0 FAIL, 2 PASS)'"
+   }
+  ]
+ },
+ "questions": [
+  {
+   "id": "q1",
+   "text": "RTL 每個時脈做 AddRoundKey→InvMixColumns→InvShiftRows→InvSubBytes 再進暫存器(decrypt.sv 114-175、91);架構模型的每回合順序是 InvShiftRows→InvSubBytes→AddRoundKey→InvMixColumns 且暫存器在回合末。暫存器切點不同時,方塊 blk9..blk13 的輸入/輸出在 RTL 中對應的訊號是否仍要與 harness 的 state_reg.q 逐步相等?請問架構:要以哪一種切法為準?",
+   "refs": [
+    "aes128_decrypt.sv:91",
+    "aes128_decrypt.sv:114-175",
+    "arch-top-model-v0.json#connections"
+   ]
+  }
+ ],
+ "assumptions": [
+  {
+   "id": "h1",
+   "claim": "係數的列組合與標準不同",
+   "evidence": "修改前 21 列、修改後 32 列;單改係數不夠,另需 c2 的迴圈拆分",
+   "status": "supported"
+  },
+  {
+   "id": "h2",
+   "claim": "xtimes04/08 的歸約只看第一級 msb",
+   "evidence": "blockcheck xtimes02→xtimes04:12 列 7 match;修改後 32/32 match",
+   "status": "supported"
+  },
+  {
+   "id": "h3",
+   "claim": "MixColumns 在 xtimes 迴圈內讀到尚未賦值的元素(迴圈順序)",
+   "evidence": "單改係數後 xor 型態 col 3 為 0、col 0–2 非 0;迴圈拆分後 32/32 match",
+   "status": "supported"
+  }
+ ],
+ "replies": [
+  {
+   "replies_to": "a1",
+   "text": "同意 h1:四項係數的列組合與矩陣不同(c2);另發現 xtimes04/08 的 1b 規約只看第一級 msb(c1),兩者都會造成 mismatch。"
+  }
+ ],
+ "rtl_changes": [
+  {
+   "id": "c1",
+   "based_on": "a1",
+   "file": "aes128_decrypt.sv",
+   "lines": "129-131",
+   "before": "msb 為 1 時 xtimes02/04/08 都 ^ 8'h1B(只看 AddRoundKey 的 msb)",
+   "after": "xtimes02/04/08 各自依前一級 msb 決定是否 ^ 8'h1B",
+   "reason": "blockcheck xtimes02→xtimes04 對 xtime 模型:12 列中 7 match(mismatch 在前一級 msb 為 1 而 AddRoundKey msb 為 0 時);xtimes04 記為 mismatch;修改後 xtimes02→04、04→08 blockcheck 各 32/32 match(xtimes04 記為 fixed)",
+   "harness_after": {
+    "function_check": {
+     "match": 32,
+     "mismatch": 0
+    },
+    "input_check": {
+     "match": 9,
+     "mismatch": 0
+    }
+   },
+   "status": "applied"
+  },
+  {
+   "id": "c2",
+   "based_on": "a1",
+   "file": "aes128_decrypt.sv",
+   "lines": "138-145",
+   "before": "MixColumns[r][i] 寫在計算 xtimes[*][j] 的外層 i 迴圈內,係數為 0e·a_r ^ 0b·a_(r+2) ^ 0d·a_(r+3) ^ 09·a_r",
+   "after": "xtimes 迴圈結束後另開一個 i 迴圈;MixColumns[r][i] = 0e·a_r ^ 0b·a_(r+1) ^ 0d·a_(r+2) ^ 09·a_(r+3)",
+   "reason": "只改係數仍 32/32 mismatch(xor 僅 col 0–2 非 0,col 3 為 0):MixColumns[*][i] 讀到同一迴圈中尚未計算的 xtimes[r>i][i];拆成兩個迴圈並改係數後 32/32 match(FIPS 197 Eq. 5.19)",
+   "harness_after": {
+    "function_check": {
+     "match": 32,
+     "mismatch": 0
+    },
+    "input_check": {
+     "match": 9,
+     "mismatch": 0
+    }
+   },
+   "status": "applied"
+  }
+ ],
+ "status": "aligned",
+ "unknown": [
+  "xtimes02/04/08 與 0b/0d/09/0e 各項單獨是否正確(未拆開 blockcheck)"
+ ],
+ "no_change": false
+}

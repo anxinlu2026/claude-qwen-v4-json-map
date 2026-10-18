@@ -1,0 +1,112 @@
+{
+ "from": "hdl",
+ "to": "arch",
+ "round": 0,
+ "block": "blk5",
+ "name": "sub_word",
+ "active_when": "1",
+ "rtl_map": [
+  {
+   "file": "aes128_key_expansion.sv",
+   "lines": "79-97",
+   "kind": "instance",
+   "drives": [
+    "steps[2].SubWord"
+   ],
+   "source": "79: sbox uu_sbox0 (.i_data(RotWord[NBW_WORD-1-:NBW_BYTE]), .o_data(SubWord[NBW_WORD-1-:NBW_BYTE]));(uu_sbox0..3 共四個)"
+  }
+ ],
+ "ports": {
+  "inputs": [
+   {
+    "arch_port": "rot",
+    "upstream": "steps[2].RotWord(blk4)",
+    "arch_connected_to": "rot_word.rot",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 80: .i_data(RotWord[NBW_WORD-1-:NBW_BYTE]),",
+     "unknown": []
+    }
+   }
+  ],
+  "outputs": [
+   {
+    "arch_port": "sub",
+    "downstream": "steps[2].RconXor 的輸入(line 101)(blk6)",
+    "arch_connected_to": "rcon_step.sub",
+    "rtl": {
+     "signal": "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord",
+     "width": 32,
+     "kind": "data",
+     "valid_when": "每個時脈",
+     "clock": "none",
+     "edge": "n/a",
+     "storage": "combinational",
+     "latency_min_cycles": 0,
+     "latency_max_cycles": 0,
+     "source": "aes128_key_expansion.sv 82: .o_data(SubWord[NBW_WORD-1-:NBW_BYTE])",
+     "unknown": []
+    }
+   }
+  ]
+ },
+ "extra_ports": [],
+ "harness_result": {
+  "function_check": {
+   "rows": 26,
+   "match": 26,
+   "mismatch": 0,
+   "raw": "tool-blk5-check-v0.json"
+  },
+  "input_check": {
+   "rows": 10,
+   "match": 0,
+   "mismatch": 10,
+   "raw": "tool-blk5-check-v0.json"
+  }
+ },
+ "confidence": {
+  "level": "medium",
+  "reason": "10 個實例 function check 全 match;輸入來自全 0 金鑰衍生值"
+ },
+ "difficulty": {
+  "level": "easy",
+  "reason": "四個 sbox 實例"
+ },
+ "control": {
+  "assessment": "unknown",
+  "items": [
+   {
+    "item": "有效條件/時序(key_cnt 1..10)",
+    "expected": "key_cnt = 1..10 逐列",
+    "observed": "RTL 沒有 key_cnt;10 個 steps[i] 實例每個時脈同時運算(空間展開),expanded_key_ff 每個時脈移位一格;更新啟動從未進入金鑰模組:uu_aes128_key_expansion.i_start 全程 0,key_exp_steps_ff 全程 000,key_done 全程 0",
+    "verdict": "unknown",
+    "evidence": "aes128_key_expansion.sv 73-109 'for(genvar i = 0; i < STEPS; i++) begin : steps'; aes128_key_expansion.sv 111-113 'assign expanded_key_nx = {valid_key , step_key[0], step_key[1], ...'; RUN #17 欄位 key_done=0、uu_aes128_key_expansion.i_start=0、key_exp_steps_ff=000 於所有 26 列"
+   },
+   {
+    "item": "逐實例 function check(補充)",
+    "expected": "與 model 相符",
+    "observed": "steps[0..9]:各 26/26 match",
+    "verdict": "consistent",
+    "evidence": "blk5_steps[0..9] 皆 (26,26,0)"
+   }
+  ]
+ },
+ "questions": [],
+ "assumptions": [],
+ "replies": [],
+ "rtl_changes": [],
+ "status": "aligned",
+ "unknown": [
+  "sbox.sv 的完整表是否每個項目正確:只由 function check 經過的值間接覆蓋,未逐項檢查"
+ ],
+ "no_change": false
+}

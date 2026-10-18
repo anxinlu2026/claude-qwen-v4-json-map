@@ -1,0 +1,105 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk0",
+ "name": "load_block",
+ "order": 0,
+ "function_text": "model.py:load_block(i_data:int128) -> list of 16 bytes. byte n = i_data[127-8n -: 8] (n = 0..15), state row n%4, column n//4. CLI: model_cli.py block load_block <i_data 32 hex> -> 32 hex, identical digits (pure wiring).",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "i_data",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0 (start row)",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "design port.i_data"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_in",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0; captured by state_reg at the start edge",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.state_in"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_in[r][c]",
+   "type": "combinational",
+   "width": 8,
+   "reset_value": "n/a",
+   "updates_when": "always (wiring)",
+   "next_value": "i_data byte (r + 4c), byte 0 = bits[127:120]",
+   "spec_ref": "verif/tb_aes128_dec.sv:33-43; FIPS 197 Sec 3.4 (s[r,c] = in[r+4c])"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "load_block"
+ },
+ "to_hdl": [
+  {
+   "id": "a1",
+   "type": "answer",
+   "replies_to": "q1",
+   "text": "q1:這個 TB 的 start 確實從未被接受,但這不是『第 0 輪無法驗證 blk0』,而是一個症狀,見 top 檔 a0。不改 testbench 檔案的前提下,請自行決定怎麼讓『被接受的 start』出現一次(例如自備激勵檔),才能得到載入列的實際值;方法由 HDL 決定。目前 input check 的 1 列 mismatch 不是載入錯誤的證據,因為那一列的 i_data 沒有被載入。",
+   "basis": "testbench",
+   "refs": [
+    "verif/tb_aes128_dec.sv:84",
+    "hdl-blk0-rtl-v0.json#q1",
+    "tool-blk0-check-v0.json"
+   ]
+  },
+  {
+   "id": "a2",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "h1:TB 註解的矩陣(第 33-43 行)明確寫出 Row 0 = 39 02 dc 19、Row 1 = 25 dc 11 6a,也就是位元組 n 放在 row n%4、col n//4;FIPS 197 Sec 3.4 同。模型串以此通過 TB 期望值。所以位元組 4*i+j 放進 [i][j](行主序)與規格不符,模型不改。這是讀碼推論,需要被接受的 start 後的實際值確認(預期:[0][1]=02、[1][0]=25)。",
+   "basis": "testbench",
+   "refs": [
+    "verif/tb_aes128_dec.sv:33-43",
+    "FIPS 197 Sec 3.4",
+    "hdl-blk0-rtl-v0.json#h1"
+   ]
+  },
+  {
+   "id": "a3",
+   "type": "hypothesis",
+   "text": "H_arch_0:載入列對應與模型不同(轉置)。為真時,其下游每一個只用位元組位置的方塊(ShiftRows、MixColumns、AddRoundKey)都看到轉置的資料,function check 的結果會被連帶影響。請在有被接受的 start 後,用載入列的實際值確認。",
+   "basis": "hdl_report",
+   "refs": [
+    "hdl-blk0-rtl-v0.json#h2",
+    "hdl-blk0-rtl-v0.json#h1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d1",
+   "about": "h1",
+   "decision": "model_kept",
+   "reason": "規格(TB 註解矩陣)與標準都支持 byte n -> row n%4, col n//4。",
+   "basis": "testbench",
+   "refs": [
+    "verif/tb_aes128_dec.sv:33-43"
+   ]
+  }
+ ],
+ "status": "suspect",
+ "no_change": false
+}

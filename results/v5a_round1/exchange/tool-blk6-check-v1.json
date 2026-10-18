@@ -1,0 +1,35 @@
+{
+ "block": "blk6",
+ "name": "rcon_step",
+ "round": 1,
+ "time": "2026-10-18 19:01:26",
+ "inputs_in_model_order": [
+  "sub",
+  "n"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord",
+  "=3"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord =3 --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RconXor --model python3 /tmp/ip_work/arch/model_cli.py block rcon_step --max 40 --when 1",
+  "rows": 39,
+  "match": 39,
+  "mismatch": 0,
+  "raw": "match\n215 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n225 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n235 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n245 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n255 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n265 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n275 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n285 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n295 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n305 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n315 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n325 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n335 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n345 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n355 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n365 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n375 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\n385 |                                                                 cb42d28f |  3 |                                                                       cf42d28f | cf42d28f |  match\nRESULT: 39 of 39 compared row(s) match the model.\nRconXor: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "mismatch_rows_compact": [],
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 1,
+  "not_seen": 9,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "sub": "8a84eb01",
+    "n": 1
+   }
+  }
+ }
+}

@@ -1,0 +1,31 @@
+{
+ "block": "blk5",
+ "name": "sub_word",
+ "round": 0,
+ "time": "2026-10-18 17:25:16",
+ "inputs_in_model_order": [
+  "rot"
+ ],
+ "rtl_input_signals": [
+  "tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord"
+ ],
+ "function_check": {
+  "command": "rtl blockcheck --in tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].RotWord --out tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.steps[2].SubWord --model python3 /tmp/ip_work/arch/model_cli.py block sub_word --max 40 --when 1",
+  "rows": 26,
+  "match": 26,
+  "mismatch": 0,
+  "raw": "                                                                   0f0fac99 | 0f0fac99 |  match\n 85 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n 95 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n105 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n115 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n125 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n135 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n145 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n155 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n165 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n175 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n185 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n195 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n205 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n215 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n225 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n235 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n245 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\n255 |                                                                 fbfbaaf9 |                                                                       0f0fac99 | 0f0fac99 |  match\nRESULT: 26 of 26 compared row(s) match the model.\nSubWord: recorded as match. This block is correct for the inputs it receives; go on to the next block (rtl next).\n",
+  "xor_of_rtl_and_model_by_byte": []
+ },
+ "input_check": {
+  "steps": 10,
+  "steps_whose_inputs_were_seen_in_order": 0,
+  "not_seen": 10,
+  "first_step_not_seen": {
+   "step": 1,
+   "wanted": {
+    "rot": "cf4f3c09"
+   }
+  }
+ }
+}

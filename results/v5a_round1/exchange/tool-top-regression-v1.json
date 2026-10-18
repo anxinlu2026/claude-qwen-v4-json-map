@@ -1,0 +1,19 @@
+{
+ "from": "tool",
+ "to": "arch",
+ "round": 1,
+ "block": "top",
+ "time": "2026-10-18 19:01:24",
+ "testbench": {
+  "result": "PASS",
+  "fail": 0,
+  "pass": 2,
+  "expected": [],
+  "observed": []
+ },
+ "official_harness": {
+  "result": "not_run",
+  "detail": "run only when the testbench passes (orchestrator)"
+ },
+ "design_changes_since_previous": []
+}

@@ -1,0 +1,127 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk3",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 1,
+   "model_condition": "key expansion step n=1",
+   "inputs": {
+    "prev_round_key": "2b7e151628aed2a6abf7158809cf4f3c",
+    "n": 1
+   },
+   "outputs": {
+    "next_round_key": "a0fafe1788542cb123a339392a6c7605"
+   }
+  },
+  {
+   "step": 2,
+   "model_condition": "key expansion step n=2",
+   "inputs": {
+    "prev_round_key": "a0fafe1788542cb123a339392a6c7605",
+    "n": 2
+   },
+   "outputs": {
+    "next_round_key": "f2c295f27a96b9435935807a7359f67f"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "key expansion step n=3",
+   "inputs": {
+    "prev_round_key": "f2c295f27a96b9435935807a7359f67f",
+    "n": 3
+   },
+   "outputs": {
+    "next_round_key": "3d80477d4716fe3e1e237e446d7a883b"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "key expansion step n=4",
+   "inputs": {
+    "prev_round_key": "3d80477d4716fe3e1e237e446d7a883b",
+    "n": 4
+   },
+   "outputs": {
+    "next_round_key": "ef44a541a8525b7fb671253bdb0bad00"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "key expansion step n=5",
+   "inputs": {
+    "prev_round_key": "ef44a541a8525b7fb671253bdb0bad00",
+    "n": 5
+   },
+   "outputs": {
+    "next_round_key": "d4d1c6f87c839d87caf2b8bc11f915bc"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "key expansion step n=6",
+   "inputs": {
+    "prev_round_key": "d4d1c6f87c839d87caf2b8bc11f915bc",
+    "n": 6
+   },
+   "outputs": {
+    "next_round_key": "6d88a37a110b3efddbf98641ca0093fd"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "key expansion step n=7",
+   "inputs": {
+    "prev_round_key": "6d88a37a110b3efddbf98641ca0093fd",
+    "n": 7
+   },
+   "outputs": {
+    "next_round_key": "4e54f70e5f5fc9f384a64fb24ea6dc4f"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "key expansion step n=8",
+   "inputs": {
+    "prev_round_key": "4e54f70e5f5fc9f384a64fb24ea6dc4f",
+    "n": 8
+   },
+   "outputs": {
+    "next_round_key": "ead27321b58dbad2312bf5607f8d292f"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "key expansion step n=9",
+   "inputs": {
+    "prev_round_key": "ead27321b58dbad2312bf5607f8d292f",
+    "n": 9
+   },
+   "outputs": {
+    "next_round_key": "ac7766f319fadc2128d12941575c006e"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "key expansion step n=10",
+   "inputs": {
+    "prev_round_key": "ac7766f319fadc2128d12941575c006e",
+    "n": 10
+   },
+   "outputs": {
+    "next_round_key": "d014f9a8c9ee2589e13f0cc8b6630ca6"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "key_cnt = 1..10",
+   "type": "combinational"
+  }
+ ],
+ "register_expected": []
+}

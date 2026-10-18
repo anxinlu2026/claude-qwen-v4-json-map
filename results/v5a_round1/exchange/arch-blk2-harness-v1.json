@@ -1,0 +1,185 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 1,
+ "block": "blk2",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 1,
+   "model_condition": "key expansion step n=1",
+   "inputs": {
+    "next_round_key": "a0fafe1788542cb123a339392a6c7605"
+   },
+   "outputs": {
+    "round_key[1]": "a0fafe1788542cb123a339392a6c7605"
+   }
+  },
+  {
+   "step": 2,
+   "model_condition": "key expansion step n=2",
+   "inputs": {
+    "next_round_key": "f2c295f27a96b9435935807a7359f67f"
+   },
+   "outputs": {
+    "round_key[2]": "f2c295f27a96b9435935807a7359f67f"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "key expansion step n=3",
+   "inputs": {
+    "next_round_key": "3d80477d4716fe3e1e237e446d7a883b"
+   },
+   "outputs": {
+    "round_key[3]": "3d80477d4716fe3e1e237e446d7a883b"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "key expansion step n=4",
+   "inputs": {
+    "next_round_key": "ef44a541a8525b7fb671253bdb0bad00"
+   },
+   "outputs": {
+    "round_key[4]": "ef44a541a8525b7fb671253bdb0bad00"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "key expansion step n=5",
+   "inputs": {
+    "next_round_key": "d4d1c6f87c839d87caf2b8bc11f915bc"
+   },
+   "outputs": {
+    "round_key[5]": "d4d1c6f87c839d87caf2b8bc11f915bc"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "key expansion step n=6",
+   "inputs": {
+    "next_round_key": "6d88a37a110b3efddbf98641ca0093fd"
+   },
+   "outputs": {
+    "round_key[6]": "6d88a37a110b3efddbf98641ca0093fd"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "key expansion step n=7",
+   "inputs": {
+    "next_round_key": "4e54f70e5f5fc9f384a64fb24ea6dc4f"
+   },
+   "outputs": {
+    "round_key[7]": "4e54f70e5f5fc9f384a64fb24ea6dc4f"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "key expansion step n=8",
+   "inputs": {
+    "next_round_key": "ead27321b58dbad2312bf5607f8d292f"
+   },
+   "outputs": {
+    "round_key[8]": "ead27321b58dbad2312bf5607f8d292f"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "key expansion step n=9",
+   "inputs": {
+    "next_round_key": "ac7766f319fadc2128d12941575c006e"
+   },
+   "outputs": {
+    "round_key[9]": "ac7766f319fadc2128d12941575c006e"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "key expansion step n=10",
+   "inputs": {
+    "next_round_key": "d014f9a8c9ee2589e13f0cc8b6630ca6"
+   },
+   "outputs": {
+    "round_key[10]": "d014f9a8c9ee2589e13f0cc8b6630ca6"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "rk[0] valid from the start edge of an update; rk[n] valid from the end of key step n; all 11 valid when key_done = 1",
+   "type": "registered"
+  }
+ ],
+ "register_expected": [
+  {
+   "element": "rk[0]",
+   "value": "2b7e151628aed2a6abf7158809cf4f3c",
+   "visible_from_row_update_case": 1,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[1]",
+   "value": "a0fafe1788542cb123a339392a6c7605",
+   "visible_from_row_update_case": 2,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[2]",
+   "value": "f2c295f27a96b9435935807a7359f67f",
+   "visible_from_row_update_case": 3,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[3]",
+   "value": "3d80477d4716fe3e1e237e446d7a883b",
+   "visible_from_row_update_case": 4,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[4]",
+   "value": "ef44a541a8525b7fb671253bdb0bad00",
+   "visible_from_row_update_case": 5,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[5]",
+   "value": "d4d1c6f87c839d87caf2b8bc11f915bc",
+   "visible_from_row_update_case": 6,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[6]",
+   "value": "6d88a37a110b3efddbf98641ca0093fd",
+   "visible_from_row_update_case": 7,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[7]",
+   "value": "4e54f70e5f5fc9f384a64fb24ea6dc4f",
+   "visible_from_row_update_case": 8,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[8]",
+   "value": "ead27321b58dbad2312bf5607f8d292f",
+   "visible_from_row_update_case": 9,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[9]",
+   "value": "ac7766f319fadc2128d12941575c006e",
+   "visible_from_row_update_case": 10,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  },
+  {
+   "element": "rk[10]",
+   "value": "d014f9a8c9ee2589e13f0cc8b6630ca6",
+   "visible_from_row_update_case": 11,
+   "note": "rk[n] is written at the edge that ends row n and is visible from row n+1; rk[0] is loaded at the start edge"
+  }
+ ],
+ "no_change": false
+}

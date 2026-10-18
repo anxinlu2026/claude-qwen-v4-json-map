@@ -1,0 +1,27 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 0,
+ "block": "blk14",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 12,
+   "model_condition": "o_done = 1",
+   "inputs": {
+    "q": "3243f6a8885a308d313198a2e0370734"
+   },
+   "outputs": {
+    "o_data": "3243f6a8885a308d313198a2e0370734"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "o_done = 1",
+   "type": "combinational (wiring)"
+  }
+ ],
+ "register_expected": []
+}
