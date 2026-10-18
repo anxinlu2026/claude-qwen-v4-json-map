@@ -77,6 +77,9 @@ HDL 期間 344 筆 `rtl` 呼叫（已排除約 6 筆 orchestrator 的）：
 | 技能與工具一致性檢查 | 啟動時檢查技能文件引用的指令是否存在 | 技能引用不存在的指令 |
 
 ### 6.3 我會怎麼做（確認後）
+**進度（2026-10-18）**：1、2 已完成並套用；agent.md 與技能統一用繁體。套用位置：舊 repo `01_plan/muti-agent-v2/{orchestrator,architecture,hdl}/agent.md`（只新增 42 行，沒改既有內容）與 `04_skills/{unit-alignment,change-review}/`（舊 repo commit `7c1a49e`），再同步到新 repo `roles/`、`skills/` 與工作副本 `multi-ai/skills/`。通用性檢查 0 個問題（`docs/drafts/check_general.py`）。尚未處理：技能文件裡 13 處引用不存在的 `rtl assumption`（`flow/check_skill_commands.py` 偵測）、6.2 的工具項目。
+
+原計畫：
 1. 先寫「通用原則」的 agent.md 修改稿（每個角色一份差異），給你看，不直接改。
 2. 檢查修改稿：不出現這次設計的訊號名、不出現 start、round、AES 等特例詞彙；每條原則能不依賴這個設計成立。
 3. 你確認後再 commit；技能比照辦理；工具項目另開討論，先做可觀測性與修改清單兩項。

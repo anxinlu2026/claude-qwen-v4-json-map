@@ -1,17 +1,17 @@
-# HDL agent.md additions (draft, general principles)
+# HDL agent.md 新增章節（草稿，通用原則，繁體）
 
-Insert after "Working rule (the file first)". The existing sections describe the work-order mode; this section describes the exchange mode.
+插入位置：「Working rule (the file first)」之後。既有章節描述工單模式；本章描述檔案交換模式。
 
-## Exchange mode (rounds of files)
+## 檔案交換模式（輪次制）
 
-Applies when the architecture engineer and you exchange files in a shared folder instead of work orders.
+適用：你與 architecture engineer 透過共享資料夾的檔案溝通，而不是逐張工單。
 
-1. **Alignment**: map each unit of the reference model to the unit of the implementation that does its work. Record facts and their evidence (file, line, quoted text, run output). When you cannot tell, write `unknown`; when several candidates fit, list them and name the main one. Do not copy values from the model into your record.
-2. **Precondition of a comparison**: before you treat a comparison as evidence, check that the compared unit was exercised under valid operating conditions. A comparison made while the unit was not exercised is not evidence: say so, and state under what conditions the values were sampled.
-3. **Unit-level verification**: verify a unit with the harness the architecture gave: feed the unit the inputs the implementation itself gave it, so a fault upstream does not hide a fault in this unit. Numbers produced by a tool are recorded by the tool; you do not edit them.
-4. **Confidence and difficulty**: for each unit write a level and one sentence of reason. Low confidence is an honest result, not a failure.
-5. **Questions and assumptions**: write what you are unsure of as a question (to the architecture) or as an assumption (falsifiable, with evidence). The architecture decides whether the model changes; you decide how the implementation changes.
-6. **Traceable changes**: you may edit the implementation of your own unit when you judge it necessary. Each change is one record: a unique id, its basis (a message id or your own assumption), the place, before and after, the reason, and the verification after the change. After each change, rerun the unit-level verification and the whole-design regression. The count of changes comes from the difference to the original, not from memory.
-7. **When blocked**: do not look for a way around a gate. Write what you compared, what you found, what you need, send it to the orchestrator and wait for the answer.
-8. **Rounds**: each round you write a file for every unit (unchanged units say `no_change`). Replies to the architecture point at its message ids.
-9. **Stopping**: when the whole-design test passes, stop changing and report.
+1. **對應**：把參考模型的每個單元對應到實作中做同一件事的單元。只記事實與證據（檔案、行號、引用的原文、執行輸出）。看不出來寫 `unknown`；有多個候選時全部列出並指出主要的一個。不要把模型的值抄進你的記錄。
+2. **比較的前提**：把比較結果當證據前，先確認被比較的單元確實在有效條件下運作過。單元沒有運作時做的比較不是證據：照實寫明，並說明取樣時的條件。
+3. **單元層級驗證**：用 architecture 提供的單元 harness 驗證：把實作自己送進該單元的輸入餵給它，使上游的錯不會遮住這個單元的錯。工具產生的數字由工具寫入，你不修改。
+4. **信心度與難度**：每個單元各寫一個等級與一句原因。信心低是誠實的結果，不是失敗。
+5. **問題與假設**：不確定的事寫成問題（問 architecture）或假設（可被推翻、附證據）。模型是否修改由 architecture 決定；實作如何修改由你決定。
+6. **可追溯的修改**：你判斷需要時，可以修改自己單元的實作。每個修改一筆記錄：唯一 id、依據（訊息 id 或你自己的假設）、位置、修改前後、原因、修改後的單元驗證結果。每次修改後重跑單元層級驗證與整個設計的回歸。修改的數量以與原始版本的差異為準，不靠記憶。
+7. **被阻擋時**：不找繞過關卡的方法。寫明你比較了什麼、發現什麼、需要什麼，送給 orchestrator 並等待答覆。
+8. **輪次**：每輪為每個單元寫一份檔案（沒有變動的單元標 `no_change`）。回覆 architecture 時指向它的訊息 id。
+9. **停止**：整個設計的測試通過時，停止修改並回報。

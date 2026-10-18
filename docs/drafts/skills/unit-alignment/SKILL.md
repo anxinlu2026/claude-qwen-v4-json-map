@@ -1,35 +1,35 @@
 ---
 name: unit-alignment
-description: "Exchange mode (HDL engineer): align each unit of the reference model with the implementation, verify it with the unit-level harness, record confidence, difficulty, questions and assumptions in a file the architecture reads."
+description: "檔案交換模式（HDL engineer）：把參考模型的每個單元對應到實作，用單元層級的 harness 驗證，並把信心度、難度、問題與假設寫進 architecture 會讀的檔案。"
 version: 0.1.0-draft
 ---
 
-# unit-alignment — which implementation does the work of which model unit, and does it agree
+# unit-alignment — 實作中哪一段做模型的哪個單元，兩者是否一致
 
-## Goal
-For each unit of the reference model, one record of: where the implementation does that work, what goes in and out, how the unit-level harness judged it, how sure you are, and what you could not settle.
+## 目標
+每個參考模型單元一份記錄：實作中哪裡做這件事、輸入與輸出是什麼、單元 harness 的判定、你有多確定、哪些你無法確定。
 
-## Source
-The architecture's files for this round (model of the unit, harness of the unit, messages to you), the implementation, the whole-design test, the simulator and the tools the project provides. Use only commands the tool lists; if a skill or a note names a command the tool does not list, the tool is right.
+## 來源
+architecture 這一輪的檔案（單元的模型、單元的 harness、給你的訊息）、實作、整個設計的測試、模擬器，以及專案提供的工具。只使用工具列出的指令；若技能或備註寫了工具沒有的指令，以工具為準。
 
-## Method
-1. Take the units in the order the architecture gave (inputs first).
-2. Read the architecture's model of the unit. Find the statements of the implementation that do that work. Write the file, the lines and what the statements do (operation, direction, order, condition), copied from a numbered listing.
-3. Find the signals that carry the unit's inputs and outputs. Record their width, kind, condition of validity, clock and edge, storage, latency. A value you cannot get from the implementation, the test or a run is `unknown`; do not take it from the model.
-4. Before you rely on a comparison, check that the unit was exercised under valid conditions (see "Precondition"). Then run the unit-level harness. It feeds the unit the inputs the implementation gave it and compares the output with the reference; it also tells whether the implementation gave the inputs the architecture expected. A tool writes these numbers into your record.
-5. Write confidence (high, medium, low) and difficulty (easy, medium, hard), each with one sentence of reason.
-6. Write questions for the architecture and falsifiable assumptions with evidence. Do not state a cause as a fact.
-7. Change the implementation only when you judge it necessary and your round allows it; record each change (see "Changes").
-8. Validate the form of your files with the project's checker before you report.
+## 方法
+1. 依 architecture 給的順序處理單元（由輸入端開始）。
+2. 讀單元的模型，在實作中找出做這件事的陳述式。寫下檔案、行號與陳述式做了什麼（運算、方向、順序、條件），行號與原文從有行號的列表複製。
+3. 找出承載單元輸入與輸出的訊號。記錄寬度、類型、有效條件、clock 與邊緣、組合或暫存、延遲。實作、測試或執行都得不到的值寫 `unknown`，不要從模型取。
+4. 依賴比較結果之前，先檢查單元在有效條件下運作過（見「前提」）。然後執行單元 harness：它把實作自己給單元的輸入餵進去，與參考比對輸出；也會告訴你實作給的輸入是否是 architecture 預期的。這些數字由工具寫進你的記錄。
+5. 寫信心度（high、medium、low）與難度（easy、medium、hard），各附一句原因。
+6. 為 architecture 寫問題，並寫可被推翻且附證據的假設。不要把原因寫成事實。
+7. 只在你判斷必要且這一輪允許時修改實作；每個修改寫一筆記錄（見「修改」）。
+8. 回報前用專案的檢查工具驗證檔案格式。
 
-## Precondition
-A comparison is evidence only if the unit worked under valid conditions when its values were sampled. If it did not, write that the comparison is not evidence and under what conditions you sampled; find a way to create valid conditions without changing the test, and record how.
+## 前提
+比較只有在取樣當下單元處於有效條件才是證據。若不是，寫明這個比較不是證據以及取樣的條件；在不修改測試的前提下想辦法製造有效條件，並記錄做法。
 
-## Changes
-Each change is one record with: unique id, basis (message id or your assumption), file and lines, before, after, reason, result of the unit-level harness after it, status (applied, proposed, reverted). After each change rerun the whole-design test. The number of changes comes from the difference to the original.
+## 修改
+每個修改一筆：唯一 id、依據（訊息 id 或你的假設）、檔案與行號、修改前、修改後、原因、修改後單元 harness 的結果、狀態（applied、proposed、reverted）。每次修改後重跑整個設計的測試。修改的數量以與原始版本的差異為準。
 
-## Output
-One file per unit and one for the whole design, with the envelope fields of the exchange (from, to, round, block), in the format the project defines. A unit that did not change says `no_change`.
+## 輸出
+每個單元一份檔案，另有整個設計一份，帶交換用的信封欄位（from、to、round、block），格式依專案的定義。沒有變動的單元寫 `no_change`。
 
-## Do not
-Change the test, the architecture's files or the tool's numbers. Look for a way around a gate: write what you compared, what you found and what you need, and wait for the answer.
+## 不要做
+不修改測試、architecture 的檔案或工具的數字。不找繞過關卡的方法：寫明你比較了什麼、發現什麼、需要什麼，然後等答覆。

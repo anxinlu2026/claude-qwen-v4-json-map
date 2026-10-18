@@ -1,25 +1,25 @@
 ---
 name: change-review
-description: "Exchange mode (architecture engineer): review the changes the HDL engineer made, classify each against the specification and the tests, reconcile the counts, decide whether the work can be closed."
+description: "檔案交換模式（architecture engineer）：審查 HDL engineer 的修改，依規格與測試逐筆分類，核對計數，判斷是否可以結案。"
 version: 0.1.0-draft
 ---
 
-# change-review — are the changes justified, and is the record complete
+# change-review — 修改是否有依據，記錄是否完整
 
-## Goal
-A judgement per change with its basis, a reconciliation of the recorded changes with the actual difference, the list of what remains doubtful, and whether the work can be closed.
+## 目標
+每筆修改一個附依據的判斷、記錄與實際差異的核對、仍有疑慮的清單，以及是否可以結案。
 
-## Source
-The HDL engineer's files, the tool files, the difference between the original and the final implementation, the specification, the standard and the tests. Numbers come from the tool files; a statement of the HDL engineer that disagrees with a tool file is pointed out, not adopted.
+## 來源
+HDL engineer 的檔案、工具檔、原始版本與最終版本的差異、規格、標準與測試。數字以工具檔為準；HDL engineer 的陳述若與工具檔不符，指出不符，不採用陳述。
 
-## Method
-1. Match every recorded change to a hunk of the difference, and every hunk to a record. List what does not match on either side. Count how many distinct places changed and how many records repeat one change.
-2. Classify each change: required by the specification or a test; an equivalent rewrite; an exception for a particular value or situation. Write the basis (section, line of the test, evidence of the HDL engineer).
-3. Look for constants or special cases that exist only to pass the test data. A passing test is not enough: say what else supports the change.
-4. Check that no change was made to the reference model to fit the implementation, and that each refusal or acceptance of a model change has its basis.
-5. For each unit the HDL engineer marked aligned, say whether the evidence supports it, and of what kind (direct, indirect, only reading).
-6. List what remains doubtful and what it would cost, separating what blocks closing from what only strengthens.
-7. State whether the work can be closed and why. Do not write an unverified assumption as a conclusion.
+## 方法
+1. 把每筆記錄的修改對應到差異的一個片段，把每個片段對應回記錄；列出兩邊對不上的項目。計算不同位置的數量，以及有幾筆記錄重複同一個修改。
+2. 每筆修改分類：規格或測試要求、等價重寫、針對特定值或情境的例外。寫明依據（章節、測試的行、HDL engineer 的證據）。
+3. 找只為通過測試資料而存在的常數或特例。測試通過不夠：說明還有什麼支持這個修改。
+4. 確認沒有為了貼合實作而修改參考模型，且每次接受或拒絕模型修改都有依據。
+5. 對 HDL engineer 標為 aligned 的每個單元，說明證據是否支持、屬於哪一類（直接、間接、只有讀碼）。
+6. 列出仍有疑慮的項目與代價，區分會阻擋結案的與只是加強的。
+7. 說明是否可以結案及理由。不把未驗證的假設寫成結論。
 
-## Output
-Per change: classification, basis. Reconciliation of counts. Doubts and risks. Closing judgement. Observations on the process, including confounding factors for any claim that the process helped.
+## 輸出
+每筆修改：分類與依據。計數的核對。疑慮與風險。結案判斷。對流程的觀察，包括任何「流程有幫助」的說法所涉及的混淆因素。
