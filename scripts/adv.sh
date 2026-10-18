@@ -10,7 +10,11 @@ if [ "$ORD" != "-" ]; then
   RUN=$RUN ORDER=$ORD nohup $D/orchestrator/relay.sh $CONV "$STATE" > /tmp/relay_adv_$CONV.out 2>&1 &
 fi
 pending(){ for f in $B/request_model_*.md; do [ -f "$f" ] || continue; a=${f/request_/answer_}; [ -f "$a" ] || { echo "MODEL REVIEW PENDING: $f"; return 0; }; done; return 1; }
-for i in $(seq 1 190); do pending && break; [ -f $B/request_next_$NREQ.md ] && break; [ -f $RUN/control/conv_$CONV.done ] && break; sleep 3; done
+for i in $(seq 1 190); do pending && break;
+  if [ -f $B/request_next_$NREQ.md ]; then
+    # answer at once so that the HDL engineer's `rtl next` returns before its shell timeout (120 s); the judgement of the delivery is the architecture's
+    [ "${AUTO_ACK:-1}" = "1" ] && [ ! -f $B/answer_next_$NREQ.md ] && printf 'CONVERSATION COMPLETE\nReport received. The architecture session judges the delivery.\n' > $B/answer_next_$NREQ.md
+    break; fi; [ -f $RUN/control/conv_$CONV.done ] && break; sleep 3; done
 date +%H:%M:%S; cat $RUN/control/conv_$CONV.done 2>/dev/null; echo
 [ -f $B/request_next_$NREQ.md ] && sed -n '/^## Report/,/^## Recorded/p' $B/request_next_$NREQ.md | cut -c1-2600
 python3 - $RUN <<'P'

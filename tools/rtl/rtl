@@ -1072,8 +1072,8 @@ def program_files(base_dirs=None):
     found = []
     for base in (base_dirs or ('/tmp', ROOT)):
         for dp, dn, fn in os.walk(base):
-            if dp.startswith(WORK) or (not base_dirs and dp.startswith(MODEL_WORK)) or '/.orchestrator' in dp or '/node_modules' in dp or '/qwen-home' in dp or '/.cache' in dp:
-                continue
+            if dp.startswith(WORK) or (not base_dirs and dp.startswith(MODEL_WORK)) or '/.orchestrator' in dp or '/node_modules' in dp or '/qwen-home' in dp or '/.cache' in dp or dp == '/tmp/pilot' or dp.startswith('/tmp/pilot/'):
+                continue   # /tmp/pilot holds the inputs and tools the orchestrator provides (v4)
             for f in fn:
                 if f.endswith(('.py', '.c', '.cc', '.cpp', '.pl', '.js', '.rb', '.go', '.rs', '.java')):
                     found.append(os.path.join(dp, f))
