@@ -1,0 +1,93 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk7",
+ "name": "word_xor_chain",
+ "order": 7,
+ "function_text": "model.py:next_round_key (second half) -> w0 = prev[0:4]^t; w1 = prev[4:8]^w0; w2 = prev[8:12]^w1; w3 = prev[12:16]^w2, output 16 bytes w0||w1||w2||w3. CLI: word_xor_chain <prev_round_key 32 hex> <t 8 hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "prev_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.prev_round_key"
+   },
+   {
+    "name": "t",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "rcon_step.t"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "next_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.next_round_key"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "next_round_key",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "w0' = w0 ^ t; w1' = w1 ^ w0'; w2' = w2 ^ w1'; w3' = w3 ^ w2'",
+   "spec_ref": "FIPS 197 Sec 5.2"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "next_round_key"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(同 blk3 c1,同一筆修改記錄兩次):判定為標準要求的修正。計數時視為一筆。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk7-rtl-v1.json#rtl_changes.c1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1",
+   "decision": "accepted",
+   "reason": "同 blk3 d11。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.2"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

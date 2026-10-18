@@ -1,0 +1,69 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk5",
+ "name": "sub_word",
+ "order": 5,
+ "function_text": "model.py:sub_word(w: 4 bytes) -> forward S-box per byte. CLI: sub_word <8 hex> -> 8 hex. Example cf4f3c09 -> 8a84eb01.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "rot",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "rot_word.rot"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "sub",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "rcon_step.sub"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "sub",
+   "type": "combinational",
+   "width": 32,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "每個 byte 過前向 S-box",
+   "spec_ref": "FIPS 197 Sec 5.1.1, 5.2 SubWord"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "sub_word"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "text": "unknown 的 sbox 256 項:架構已靜態核對 final_rtl_round1/sbox.sv 全部 256 項等於標準前向 S-box(FIPS 197 Fig. 7),沒有不符項。",
+   "basis": "spec",
+   "refs": [
+    "final_rtl_round1/sbox.sv"
+   ]
+  }
+ ],
+ "decisions": [],
+ "status": "aligned",
+ "no_change": false
+}

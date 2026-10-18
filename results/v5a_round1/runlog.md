@@ -35,3 +35,6 @@
 - 10-18 18:58 注意：orchestrator 在 HDL 工作期間自己跑 rtl sim/status/diff 會進入共用的歷史與狀態，並可能干擾；之後改用唯讀方式（讀 history.jsonl、state.json、主機上的 RTL 檔）檢查，不在共用容器執行 rtl 指令。
 - 10-18 19:01 **目標達成**：HDL 第 1 輪，testbench PASS（RUN #236，0 FAIL / 2 PASS，13 處修改），19:02 orchestrator 以獨立容器跑官方測試（cocotb）：1 passed。最終 RTL 存於 final_rtl_round1/，與原始的 diff 存於 final_rtl_round1.diff。
 - 10-18 19:03 一致性檢查：hdl-*-v1 16 份格式 0 問題；arch-v0/v1 未被動；rtl_changes 共 12 筆，工具記 13 處修改（交架構核對）；blk1（3/39）、blk2（0/39）、blk13（2/32）標 aligned 但功能檢查吻合數低（由架構判斷，可能是「依值對應」模式對狀態類方塊的限制）；blk8 仍無法執行 harness；blk4–6 no_change 但狀態仍 open。
+- 10-18 19:10 請架構做收尾審查（v2）：逐筆審查 rtl_changes（依規格與 testbench）、核對計數不一致（HDL 說 9 處、rtl_changes 12 筆、工具 13 處、diff 6 個片段）、判斷 blk1/2/8/13、寫 v2、是否可結案。
+- 10-18 19:18 架構收尾審查（v2）完成（約 3 分鐘）：17 份 v2；orchestrator 檢查：格式 0 問題、v0 未動、模型回歸 ALL PASS（重跑）、RTL 自官方測試後未改變；計數機械核對與架構相符（12 筆 rtl_changes＝10 個不同位置＋2 筆重複記錄；diff 6 個片段）。架構結論：可以結案；逐筆審查 10 個修改均有規格或 testbench 依據；未發現針對測試向量的常數；仍有疑慮（不阻擋結案）：重置後以 i_update_key=0 開始會停在 round_ff=1（規格未定義）、金鑰展開只重跑 steps[2]、blk8 為間接證據。
+- 10-18 19:20 流程不足（架構觀察，待修）：狀態類方塊的 function check 不可用（需要值對應 register_mapping）；工具計數與 HDL 計數不一致（建議由腳本從 diff 產生修改清單）；重複方塊的 rtl_changes 被記兩次（建議以修改為單位記一筆，方塊引用 id）。

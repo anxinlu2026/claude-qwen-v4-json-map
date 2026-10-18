@@ -1,0 +1,94 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk3",
+ "name": "key_expand_step",
+ "order": 3,
+ "function_text": "model.py:next_round_key(prev: 16 bytes, n: 1..10) -> 16 bytes. t = RconXor(SubWord(RotWord(prev[12:16])), n); w0 = prev[0:4]^t; w1 = prev[4:8]^w0; w2 = prev[8:12]^w1; w3 = prev[12:16]^w2; output w0||w1||w2||w3, each word byte 0 first. CLI: key_expand_step <prev_round_key 32 hex> <n hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "prev_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_key_store.rk_prev"
+   },
+   {
+    "name": "n",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_counter.key_cnt"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "next_round_key",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_key_store.rk_next"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "next_round_key (w0'..w3')",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "w0' = w0 ^ t; w1' = w1 ^ w0'; w2' = w2 ^ w1'; w3' = w3 ^ w2'; t = Rcon(n) ^ SubWord(RotWord(w3))",
+   "spec_ref": "FIPS 197 Sec 5.2"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "next_round_key"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(第 103-106 行 字取序 4i+3..4i -> 4i..4i+3):判定為標準要求的修正(FIPS 197 Sec 5.2:w0'=w0^t、w1'=w1^w0'…)。注意:你的 h1『完全反序』的描述不精確(我在 v1 已指出),實際修改是把每個輸出字與輸入字、前一輸出字的配對改成標準鏈接。steps[2] 39/39 match(真實金鑰)。其餘 steps 是同一段 generate 程式,只重跑 steps[2] 可接受;我另外靜態核對過 Rcon 表(第 62-71 行)與 sbox.sv/inv_sbox.sv 的 256 項,都等於標準。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk3-rtl-v1.json#rtl_changes.c1",
+    "FIPS 197 Sec 5.2, 5.1.1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1",
+   "decision": "accepted",
+   "reason": "標準要求。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.2"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

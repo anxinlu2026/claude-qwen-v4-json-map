@@ -1,0 +1,781 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "top",
+ "design": {
+  "name": "aes128_decrypt",
+  "spec_ref": "task prompt (prompt.json) + FIPS 197 (resources/standards/aes)"
+ },
+ "design_ports": [
+  {
+   "name": "clk",
+   "dir": "in",
+   "width": 1,
+   "kind": "clock",
+   "clock": "none",
+   "edge": "pos",
+   "function": "Clock; all registers change on the rising edge. TB period 10 time units (clk toggles every 5).",
+   "timing": ""
+  },
+  {
+   "name": "rst_async_n",
+   "dir": "in",
+   "width": 1,
+   "kind": "reset",
+   "clock": "clk",
+   "edge": "rising",
+   "function": "Asynchronous active-low reset: idle, counters 0, key_done 0, state 0 so o_data = 0, o_done = 0 (AA6).",
+   "timing": "TB: low for 2 time units at start; cocotb: low for one clock, then high. Asserting it clears every register."
+  },
+  {
+   "name": "i_update_key",
+   "dir": "in",
+   "width": 1,
+   "kind": "control",
+   "clock": "clk",
+   "edge": "rising",
+   "function": "1 together with i_start: take i_key as the new cipher key, expand it first (10 clocks), then decrypt. 0 together with i_start: reuse the stored expanded key.",
+   "timing": "level; only looked at in the row where i_start = 1; TB and cocotb drive it 0 in all later rows, so it must not be sampled again after the start row (AA10)"
+  },
+  {
+   "name": "i_key",
+   "dir": "in",
+   "width": 128,
+   "kind": "data",
+   "clock": "clk",
+   "edge": "rising",
+   "function": "128-bit cipher key.",
+   "timing": "valid only in the start row (TB/cocotb set it to 0 right after); must be captured at the start edge when i_update_key = 1; ignored otherwise"
+  },
+  {
+   "name": "i_start",
+   "dir": "in",
+   "width": 1,
+   "kind": "control",
+   "clock": "clk",
+   "edge": "rising",
+   "function": "Starts one decryption of the block on i_data.",
+   "timing": "one-cycle pulse (TB: set at negedge, cleared at next negedge = sampled at exactly one rising edge; cocotb: one clock); sampled at the rising edge; ignored while busy (AA7)"
+  },
+  {
+   "name": "i_data",
+   "dir": "in",
+   "width": 128,
+   "kind": "data",
+   "clock": "clk",
+   "edge": "rising",
+   "function": "128-bit ciphertext block.",
+   "timing": "valid only in the start row; TB/cocotb set it to 0 right after; must be latched at the start edge (AA8)"
+  },
+  {
+   "name": "o_done",
+   "dir": "out",
+   "width": 1,
+   "kind": "control",
+   "clock": "clk",
+   "edge": "rising",
+   "function": "Result valid.",
+   "timing": "0 in the row after the start row (a stale 1 would make the cocotb loop compare too early); then 1 for exactly one row when o_data holds the plaintext; 0 again (AA4). The TB waits for a rising edge of o_done, so it must be 0 before the pulse."
+  },
+  {
+   "name": "o_data",
+   "dir": "out",
+   "width": 128,
+   "kind": "data",
+   "clock": "clk",
+   "edge": "rising",
+   "function": "128-bit plaintext block.",
+   "timing": "correct plaintext in the row where o_done = 1 (TB reads it at the negedge inside that row; cocotb reads it in the row it sees o_done = 1); after reset 0 (AA5, AA6); value in other rows not specified (AA5)"
+  }
+ ],
+ "blocks": [
+  {
+   "id": "blk0",
+   "name": "load_block",
+   "order": 0,
+   "file": "arch-blk0-model-v2.json",
+   "harness": "arch-blk0-harness-v0.json"
+  },
+  {
+   "id": "blk1",
+   "name": "state_reg",
+   "order": 1,
+   "file": "arch-blk1-model-v2.json",
+   "harness": "arch-blk1-harness-v2.json"
+  },
+  {
+   "id": "blk2",
+   "name": "round_key_store",
+   "order": 2,
+   "file": "arch-blk2-model-v2.json",
+   "harness": "arch-blk2-harness-v1.json"
+  },
+  {
+   "id": "blk3",
+   "name": "key_expand_step",
+   "order": 3,
+   "file": "arch-blk3-model-v2.json",
+   "harness": "arch-blk3-harness-v0.json"
+  },
+  {
+   "id": "blk4",
+   "name": "rot_word",
+   "order": 4,
+   "file": "arch-blk4-model-v2.json",
+   "harness": "arch-blk4-harness-v0.json"
+  },
+  {
+   "id": "blk5",
+   "name": "sub_word",
+   "order": 5,
+   "file": "arch-blk5-model-v2.json",
+   "harness": "arch-blk5-harness-v0.json"
+  },
+  {
+   "id": "blk6",
+   "name": "rcon_step",
+   "order": 6,
+   "file": "arch-blk6-model-v2.json",
+   "harness": "arch-blk6-harness-v0.json"
+  },
+  {
+   "id": "blk7",
+   "name": "word_xor_chain",
+   "order": 7,
+   "file": "arch-blk7-model-v2.json",
+   "harness": "arch-blk7-harness-v0.json"
+  },
+  {
+   "id": "blk8",
+   "name": "round_key_select",
+   "order": 8,
+   "file": "arch-blk8-model-v2.json",
+   "harness": "arch-blk8-harness-v1.json"
+  },
+  {
+   "id": "blk9",
+   "name": "add_round_key",
+   "order": 9,
+   "file": "arch-blk9-model-v2.json",
+   "harness": "arch-blk9-harness-v0.json"
+  },
+  {
+   "id": "blk10",
+   "name": "inv_shift_rows",
+   "order": 10,
+   "file": "arch-blk10-model-v2.json",
+   "harness": "arch-blk10-harness-v0.json"
+  },
+  {
+   "id": "blk11",
+   "name": "inv_sub_bytes",
+   "order": 11,
+   "file": "arch-blk11-model-v2.json",
+   "harness": "arch-blk11-harness-v0.json"
+  },
+  {
+   "id": "blk12",
+   "name": "inv_mix_columns",
+   "order": 12,
+   "file": "arch-blk12-model-v2.json",
+   "harness": "arch-blk12-harness-v0.json"
+  },
+  {
+   "id": "blk13",
+   "name": "round_mux",
+   "order": 13,
+   "file": "arch-blk13-model-v2.json",
+   "harness": "arch-blk13-harness-v1.json"
+  },
+  {
+   "id": "blk14",
+   "name": "output_map",
+   "order": 14,
+   "file": "arch-blk14-model-v2.json",
+   "harness": "arch-blk14-harness-v0.json"
+  }
+ ],
+ "connections": [
+  {
+   "from": "design port.i_data",
+   "to": "blk0.i_data",
+   "when": "always"
+  },
+  {
+   "from": "blk0.state_in",
+   "to": "blk1.state_in",
+   "when": "always"
+  },
+  {
+   "from": "design port.i_start",
+   "to": "key_counter.i_start",
+   "when": "always"
+  },
+  {
+   "from": "design port.i_update_key",
+   "to": "key_counter.i_update_key",
+   "when": "always"
+  },
+  {
+   "from": "design port.i_start",
+   "to": "round_counter.i_start",
+   "when": "always"
+  },
+  {
+   "from": "design port.i_update_key",
+   "to": "round_counter.i_update_key",
+   "when": "always"
+  },
+  {
+   "from": "design port.i_key",
+   "to": "blk2.rk0_in",
+   "when": "i_update_key = 1 at start"
+  },
+  {
+   "from": "key_counter.key_cnt",
+   "to": "blk2.key_idx",
+   "when": "always"
+  },
+  {
+   "from": "key_counter.key_cnt",
+   "to": "blk3.n",
+   "when": "always"
+  },
+  {
+   "from": "key_counter.upd_load",
+   "to": "blk2.rk0_load",
+   "when": "always"
+  },
+  {
+   "from": "round_counter.start_accept",
+   "to": "blk1.load_sel",
+   "when": "always"
+  },
+  {
+   "from": "round_counter.round_cnt",
+   "to": "blk8.round_cnt",
+   "when": "always"
+  },
+  {
+   "from": "round_counter.round_cnt",
+   "to": "blk13.round_cnt",
+   "when": "always"
+  },
+  {
+   "from": "done_gen.o_done",
+   "to": "design port.o_done",
+   "when": "always"
+  },
+  {
+   "from": "blk2.rk_prev",
+   "to": "blk3.prev_round_key",
+   "when": "always"
+  },
+  {
+   "from": "blk3.prev_round_key",
+   "to": "blk4.w3",
+   "when": "bytes 12..15 of the 128-bit input"
+  },
+  {
+   "from": "blk3.prev_round_key",
+   "to": "blk7.prev_round_key",
+   "when": "always"
+  },
+  {
+   "from": "blk3.n",
+   "to": "blk6.n",
+   "when": "always"
+  },
+  {
+   "from": "blk4.rot",
+   "to": "blk5.rot",
+   "when": "always"
+  },
+  {
+   "from": "blk5.sub",
+   "to": "blk6.sub",
+   "when": "always"
+  },
+  {
+   "from": "blk6.t",
+   "to": "blk7.t",
+   "when": "always"
+  },
+  {
+   "from": "blk7.next_round_key",
+   "to": "blk3.next_round_key",
+   "when": "composite output"
+  },
+  {
+   "from": "blk3.next_round_key",
+   "to": "blk2.rk_next",
+   "when": "always"
+  },
+  {
+   "from": "blk2.rk_all",
+   "to": "blk8.rk_all",
+   "when": "always"
+  },
+  {
+   "from": "blk8.round_key",
+   "to": "blk9.round_key",
+   "when": "always"
+  },
+  {
+   "from": "blk1.q",
+   "to": "blk9.state",
+   "when": "round_cnt = 1"
+  },
+  {
+   "from": "blk1.q",
+   "to": "blk10.state",
+   "when": "round_cnt = 2..11"
+  },
+  {
+   "from": "blk1.q",
+   "to": "blk14.q",
+   "when": "always"
+  },
+  {
+   "from": "blk10.state_out",
+   "to": "blk11.state",
+   "when": "always"
+  },
+  {
+   "from": "blk11.state_out",
+   "to": "blk9.state",
+   "when": "round_cnt = 2..11"
+  },
+  {
+   "from": "blk9.state_out",
+   "to": "blk12.state",
+   "when": "round_cnt = 2..10"
+  },
+  {
+   "from": "blk9.state_out",
+   "to": "blk13.initial_path",
+   "when": "round_cnt = 1"
+  },
+  {
+   "from": "blk9.state_out",
+   "to": "blk13.final_path",
+   "when": "round_cnt = 11"
+  },
+  {
+   "from": "blk12.state_out",
+   "to": "blk13.round_path",
+   "when": "always"
+  },
+  {
+   "from": "blk13.state_next",
+   "to": "blk1.state_next",
+   "when": "always"
+  },
+  {
+   "from": "blk14.o_data",
+   "to": "design port.o_data",
+   "when": "always"
+  }
+ ],
+ "control_blocks_note": "control blocks (key_counter, round_counter, done_gen, key_done_flag) are in the model; their behaviour is given as the schedule below and is what 'control assessment' is compared with",
+ "schedule": {
+  "note": "Row t = values seen during clock cycle t. Row 0 = the row in which i_start = 1 is presented (sampled at the edge that ends row 0). i_start/i_update_key show the inputs of that row. key_cnt/round/key_done/o_done are register values during the row. Spec-fixed: o_done = 0 in row 1 and 1 only when o_data is the plaintext (TB/cocotb). Everything else in the table depends on AA1-AA4 (row counts) and AA6 (key_done initial value).",
+  "cases": [
+   {
+    "case": "update",
+    "scenario": "TB Simple_test(1) right after reset",
+    "i_start": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "i_update_key": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "key_cnt": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "round": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     0
+    ],
+    "key_done": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "o_done": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "o_data_valid": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "rows": 23,
+    "fixed_by_spec": [
+     "i_start",
+     "i_update_key",
+     "o_done[1]=0",
+     "o_done at last row =1 with correct o_data"
+    ],
+    "depends_on": {
+     "rows 1..10 key_cnt": "AA1",
+     "rows 11..21 round": "AA2, AA3",
+     "row 22 o_done": "AA1-AA4",
+     "key_done initial 0": "AA6, AA12"
+    }
+   },
+   {
+    "case": "no_update",
+    "scenario": "TB Simple_test(0) after an update run (stored key valid)",
+    "i_start": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "i_update_key": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "key_cnt": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "round": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11,
+     0
+    ],
+    "key_done": [
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    "o_done": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "o_data_valid": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ],
+    "rows": 13,
+    "fixed_by_spec": [
+     "i_start",
+     "i_update_key",
+     "o_done[1]=0",
+     "o_done at last row =1 with correct o_data"
+    ],
+    "depends_on": {
+     "rows 1..11 round": "AA2, AA3",
+     "row 12 o_done": "AA2-AA4",
+     "key_done=1 throughout": "AA12"
+    }
+   }
+  ]
+ },
+ "byte_layout": "128-bit value: byte n = bits[127-8n : 120-8n]; state row = n%4, column = n//4; round key word j = bytes 4j..4j+3. Verified by the testbench vector (key 2b7e..., ct 3925..., pt 3243...).",
+ "order_note": "blocks are listed from input to output; the HDL engineer aligns them in this order",
+ "harness": {
+  "model_chain_result": "model chain unchanged in round 1; harness_check ALL PASS re-run in model_v1/ (see model_v1_regression)",
+  "testbench_stimulus": {
+   "key": "0x2b7e151628aed2a6abf7158809cf4f3c",
+   "i_data": "0x3925841d02dc09fbdc118597196a0b32"
+  },
+  "expected_output": "0x3243f6a8885a308d313198a2e0370734"
+ },
+ "status": "aligned",
+ "assumption_classes": {
+  "spec_or_tb_fixed": [
+   "i_start 在被取樣的上升沿被接受(TB 29-52、84)",
+   "i_data 與 i_key 在 start 當拍擷取(TB 49-52 把它們清 0)",
+   "start 後下一列 o_done=0;o_done 上升沿那一列(讀取在其 negedge)o_data 為明文(TB 54-57)",
+   "資料位元組順序 byte n -> row n%4, col n//4(TB 33-43)",
+   "運算內容與順序依 FIPS 197 Sec 5.3(InvShiftRows 右旋、反向矩陣、輪金鑰 rk[10]..rk[0])"
+  ],
+  "architect_choice_not_required": [
+   "AA1 金鑰展開 10 拍串列",
+   "AA2/AA3 內部切點與總拍數",
+   "AA4 o_done 單拍脈衝(待機高電位可接受)",
+   "AA7 忙碌中收到 start 的行為(TB 不涉及)",
+   "key_done 等內部旗標的名稱與形式"
+  ]
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "text": "收尾審查結論(rtl_changes 計數核對):12 筆記錄 = 10 個不同的修改 + 2 筆重複記錄(blk3/blk7 c1 為同一修改、blk8/blk9 c1 為同一修改)。final_rtl_round1.diff 有 6 個片段(decrypt.sv 4 個、key_expansion.sv 2 個),包含全部 10 個修改,沒有未記錄的片段。HDL 說的 9 處等於 hdl-top-rtl-v1 的 rtl_edit_summary(9 條,其中把 ShiftRows 方向與 round 1 旁路合成一條)。rtl 工具的 13 處多出的是被還原再重做的嘗試(依你的 hdl-top unknown 記載,MixColumns 曾被改 5 次還原),最終程式碼以 diff 為準。請更正 top 的敘述,使用一致的計數。",
+   "basis": "hdl_report",
+   "refs": [
+    "final_rtl_round1.diff",
+    "hdl-top-rtl-v1.json#rtl_edit_summary"
+   ]
+  },
+  {
+   "id": "a12",
+   "type": "answer",
+   "text": "沒有發現針對測試向量值的特例:diff 中的常數只有 8'h1B(xtime 歸約)、round_ff 計數值 0/1/11。唯一的『針對某一輪』條件是 round_ff==1(標準的初始步驟)。我另外靜態核對 sbox.sv、inv_sbox.sv 各 256 項與 Rcon 表等於標準。官方測試通過(隨機輸入)與 TB 兩次通過一致支持功能正確;殘留風險見 blk13 a12。",
+   "basis": "spec",
+   "refs": [
+    "final_rtl_round1.diff",
+    "final_rtl_round1/sbox.sv",
+    "final_rtl_round1/inv_sbox.sv"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "all rtl_changes",
+   "decision": "accepted",
+   "reason": "10 個修改皆為規格、標準或 TB 要求的修正或必要的等價重寫;無針對值的特例。",
+   "basis": "spec",
+   "refs": [
+    "final_rtl_round1.diff",
+    "FIPS 197 Sec 5",
+    "verif/tb_aes128_dec.sv:29-57"
+   ]
+  },
+  {
+   "id": "d12",
+   "about": "model",
+   "decision": "model_kept",
+   "reason": "第 1 輪與第 2 輪沒有改模型;RTL 修正後的時程(row 22/12)與模型 schedule 完全一致。",
+   "basis": "testbench",
+   "refs": [
+    "arch-top-model-v0.json#schedule"
+   ]
+  }
+ ],
+ "no_change": false,
+ "model_v1_regression": {
+  "dir": "model_v1/",
+  "result": "ALL PASS",
+  "python_changed": false,
+  "round": 2
+ }
+}

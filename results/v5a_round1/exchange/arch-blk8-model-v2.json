@@ -1,0 +1,95 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk8",
+ "name": "round_key_select",
+ "order": 8,
+ "function_text": "model.py:round_key_index(r: 1..11) -> index into rk: 1 -> 10; r in 2..11 -> 11-r. Output = rk[index] (16 bytes). CLI: round_key_select <rk_all 352 hex = rk[0]||rk[1]||...||rk[10], rk[0] most significant> <round_cnt hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "rk_all",
+    "width": 1408,
+    "kind": "held",
+    "valid_when": "all rk valid (key_done = 1)",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_key_store.rk_all"
+   },
+   {
+    "name": "round_cnt",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_counter.round_cnt"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "round_key",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.round_key"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "round_key",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "rk[10] 當 round_cnt=1;rk[11 - round_cnt] 當 round_cnt=2..11;word j = bytes 4j..4j+3",
+   "spec_ref": "FIPS 197 Sec 5.3; AA11"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "round_key_index"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(第 119 行 金鑰索引 4*i+j -> 4*j+i,同 blk9 c1,同一筆):判定為標準要求的修正(FIPS 197 Sec 5.3.4,金鑰 byte n 與狀態 byte n 同位置)。此方塊沒有獨立訊號,harness 不可執行,aligned 的依據屬於間接類:round 11 以真實 rk0 的 2/2 match、九輪金鑰槽選擇 11-round_ff 由 HDL 手算吻合、端到端 TB 與官方測試(隨機輸入)通過。金鑰槽選錯任一輪都會使任何輸入的結果錯,所以風險低。若要加強,請檢查 round 2..10 每輪 (AddRoundKey ^ 暫存器值) 是否等於 arch-blk8-harness-v1.json#expected_activity 的 key_bytes。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk8-rtl-v1.json#rtl_changes.c1",
+    "FIPS 197 Sec 5.3.4",
+    "arch-blk8-harness-v1.json#expected_activity"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1",
+   "decision": "accepted",
+   "reason": "標準要求;證據類別為間接(無 round_key 訊號)。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3.4"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

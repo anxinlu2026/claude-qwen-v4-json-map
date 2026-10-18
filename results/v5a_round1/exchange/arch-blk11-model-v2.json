@@ -1,0 +1,69 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk11",
+ "name": "inv_sub_bytes",
+ "order": 11,
+ "function_text": "model.py:inv_sub_bytes(state: 16 bytes) -> inverse S-box per byte (position unchanged). CLI: inv_sub_bytes <state 32 hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_shift_rows.state_out"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_out",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "每個 byte 過反向 S-box,位置不變",
+   "spec_ref": "FIPS 197 Sec 5.3.2"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "inv_sub_bytes"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "text": "unknown 的 inv_sbox 256 項:架構已靜態核對 final_rtl_round1/inv_sbox.sv 全部 256 項等於標準反向 S-box(FIPS 197 Fig. 14),沒有不符項。",
+   "basis": "spec",
+   "refs": [
+    "final_rtl_round1/inv_sbox.sv"
+   ]
+  }
+ ],
+ "decisions": [],
+ "status": "aligned",
+ "no_change": false
+}

@@ -1,0 +1,454 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk1",
+ "source": "top testbench stimulus -> python model chain dump",
+ "end_to_end_check": "chain output == testbench expected plaintext",
+ "steps": [
+  {
+   "step": 1,
+   "model_condition": "round_cnt = 1",
+   "inputs": {
+    "state_next": "e9317db5cb322c723d2e895faf090794"
+   },
+   "outputs": {
+    "state": "e9317db5cb322c723d2e895faf090794"
+   }
+  },
+  {
+   "step": 2,
+   "model_condition": "round_cnt = 2",
+   "inputs": {
+    "state_next": "876e46a6f24ce78c4d904ad897ecc395"
+   },
+   "outputs": {
+    "state": "876e46a6f24ce78c4d904ad897ecc395"
+   }
+  },
+  {
+   "step": 3,
+   "model_condition": "round_cnt = 3",
+   "inputs": {
+    "state_next": "be3bd4fed4e1f2c80a642cc0da83864d"
+   },
+   "outputs": {
+    "state": "be3bd4fed4e1f2c80a642cc0da83864d"
+   }
+  },
+  {
+   "step": 4,
+   "model_condition": "round_cnt = 4",
+   "inputs": {
+    "state_next": "f783403f27433df09bb531ff54aba9d3"
+   },
+   "outputs": {
+    "state": "f783403f27433df09bb531ff54aba9d3"
+   }
+  },
+  {
+   "step": 5,
+   "model_condition": "round_cnt = 5",
+   "inputs": {
+    "state_next": "a14f3dfe78e803fc10d5a8df4c632923"
+   },
+   "outputs": {
+    "state": "a14f3dfe78e803fc10d5a8df4c632923"
+   }
+  },
+  {
+   "step": 6,
+   "model_condition": "round_cnt = 6",
+   "inputs": {
+    "state_next": "e1fb967ce8c8ae9b356cd2ba974ffb53"
+   },
+   "outputs": {
+    "state": "e1fb967ce8c8ae9b356cd2ba974ffb53"
+   }
+  },
+  {
+   "step": 7,
+   "model_condition": "round_cnt = 7",
+   "inputs": {
+    "state_next": "52a4c89485116a28e3cf2fd7f6505e07"
+   },
+   "outputs": {
+    "state": "52a4c89485116a28e3cf2fd7f6505e07"
+   }
+  },
+  {
+   "step": 8,
+   "model_condition": "round_cnt = 8",
+   "inputs": {
+    "state_next": "acc1d6b8efb55a7b1323cfdf457311b5"
+   },
+   "outputs": {
+    "state": "acc1d6b8efb55a7b1323cfdf457311b5"
+   }
+  },
+  {
+   "step": 9,
+   "model_condition": "round_cnt = 9",
+   "inputs": {
+    "state_next": "49db873b453953897f02d2f177de961a"
+   },
+   "outputs": {
+    "state": "49db873b453953897f02d2f177de961a"
+   }
+  },
+  {
+   "step": 10,
+   "model_condition": "round_cnt = 10",
+   "inputs": {
+    "state_next": "d4bf5d30e0b452aeb84111f11e2798e5"
+   },
+   "outputs": {
+    "state": "d4bf5d30e0b452aeb84111f11e2798e5"
+   }
+  },
+  {
+   "step": 11,
+   "model_condition": "round_cnt = 11",
+   "inputs": {
+    "state_next": "3243f6a8885a308d313198a2e0370734"
+   },
+   "outputs": {
+    "state": "3243f6a8885a308d313198a2e0370734"
+   }
+  }
+ ],
+ "expected_activity": [
+  {
+   "active_when": "q holds: ciphertext after start edge; then result of the previous step; plaintext after round 11",
+   "type": "registered"
+  }
+ ],
+ "register_expected": [
+  {
+   "element": "state",
+   "case": "update (TB Simple_test(1))",
+   "note": "row 0 = start row (registers before the start edge); state_register is the model's state in each row",
+   "rows": [
+    {
+     "row": 0,
+     "state_register": "00000000000000000000000000000000",
+     "round": 0,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 1,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 1,
+     "o_done": 0
+    },
+    {
+     "row": 2,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 2,
+     "o_done": 0
+    },
+    {
+     "row": 3,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 3,
+     "o_done": 0
+    },
+    {
+     "row": 4,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 4,
+     "o_done": 0
+    },
+    {
+     "row": 5,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 5,
+     "o_done": 0
+    },
+    {
+     "row": 6,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 6,
+     "o_done": 0
+    },
+    {
+     "row": 7,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 7,
+     "o_done": 0
+    },
+    {
+     "row": 8,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 8,
+     "o_done": 0
+    },
+    {
+     "row": 9,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 9,
+     "o_done": 0
+    },
+    {
+     "row": 10,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 0,
+     "key_cnt": 10,
+     "o_done": 0
+    },
+    {
+     "row": 11,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 1,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 12,
+     "state_register": "e9317db5cb322c723d2e895faf090794",
+     "round": 2,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 13,
+     "state_register": "876e46a6f24ce78c4d904ad897ecc395",
+     "round": 3,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 14,
+     "state_register": "be3bd4fed4e1f2c80a642cc0da83864d",
+     "round": 4,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 15,
+     "state_register": "f783403f27433df09bb531ff54aba9d3",
+     "round": 5,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 16,
+     "state_register": "a14f3dfe78e803fc10d5a8df4c632923",
+     "round": 6,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 17,
+     "state_register": "e1fb967ce8c8ae9b356cd2ba974ffb53",
+     "round": 7,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 18,
+     "state_register": "52a4c89485116a28e3cf2fd7f6505e07",
+     "round": 8,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 19,
+     "state_register": "acc1d6b8efb55a7b1323cfdf457311b5",
+     "round": 9,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 20,
+     "state_register": "49db873b453953897f02d2f177de961a",
+     "round": 10,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 21,
+     "state_register": "d4bf5d30e0b452aeb84111f11e2798e5",
+     "round": 11,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 22,
+     "state_register": "3243f6a8885a308d313198a2e0370734",
+     "round": 0,
+     "key_cnt": 0,
+     "o_done": 1
+    }
+   ]
+  },
+  {
+   "element": "state",
+   "case": "no_update (stored key)",
+   "rows": [
+    {
+     "row": 0,
+     "state_register": "00000000000000000000000000000000",
+     "round": 0,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 1,
+     "state_register": "3925841d02dc09fbdc118597196a0b32",
+     "round": 1,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 2,
+     "state_register": "e9317db5cb322c723d2e895faf090794",
+     "round": 2,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 3,
+     "state_register": "876e46a6f24ce78c4d904ad897ecc395",
+     "round": 3,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 4,
+     "state_register": "be3bd4fed4e1f2c80a642cc0da83864d",
+     "round": 4,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 5,
+     "state_register": "f783403f27433df09bb531ff54aba9d3",
+     "round": 5,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 6,
+     "state_register": "a14f3dfe78e803fc10d5a8df4c632923",
+     "round": 6,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 7,
+     "state_register": "e1fb967ce8c8ae9b356cd2ba974ffb53",
+     "round": 7,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 8,
+     "state_register": "52a4c89485116a28e3cf2fd7f6505e07",
+     "round": 8,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 9,
+     "state_register": "acc1d6b8efb55a7b1323cfdf457311b5",
+     "round": 9,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 10,
+     "state_register": "49db873b453953897f02d2f177de961a",
+     "round": 10,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 11,
+     "state_register": "d4bf5d30e0b452aeb84111f11e2798e5",
+     "round": 11,
+     "key_cnt": 0,
+     "o_done": 0
+    },
+    {
+     "row": 12,
+     "state_register": "3243f6a8885a308d313198a2e0370734",
+     "round": 0,
+     "key_cnt": 0,
+     "o_done": 1
+    }
+   ]
+  }
+ ],
+ "no_change": false,
+ "register_mapping": {
+  "note": "RTL registers the output of ISR/ISB one cycle later than the model's cut; rtl register after cycle r = ISB(ISR(model state after round r)), r=1..10, which is the blk9 state input of round r+1 in arch-blk9-harness-v0.json",
+  "rows": [
+   {
+    "rtl_cycle_round_ff": 1,
+    "rtl_register_after_this_cycle": "eb40f21e592e38848ba113e71bc342d2",
+    "equals": "model blk9 state input at round 2"
+   },
+   {
+    "rtl_cycle_round_ff": 2,
+    "rtl_register_after_this_cycle": "ea835cf00445332d655d98ad8596b0c5",
+    "equals": "model blk9 state input at round 3"
+   },
+   {
+    "rtl_cycle_round_ff": 3,
+    "rtl_register_after_this_cycle": "5a4142b11949dc1fa3e019657a8c040c",
+    "equals": "model blk9 state input at round 4"
+   },
+   {
+    "rtl_cycle_round_ff": 4,
+    "rtl_register_after_this_cycle": "260e2e173d41b77de86472a9fdd28b25",
+    "equals": "model blk9 state input at round 5"
+   },
+   {
+    "rtl_cycle_round_ff": 5,
+    "rtl_register_after_this_cycle": "f1006f55c1924cef7cc88b325db5d50c",
+    "equals": "model blk9 state input at round 6"
+   },
+   {
+    "rtl_cycle_round_ff": 6,
+    "rtl_register_after_this_cycle": "e0927fe8c86363c0d9b1355085b8be01",
+    "equals": "model blk9 state input at round 7"
+   },
+   {
+    "rtl_cycle_round_ff": 7,
+    "rtl_register_after_this_cycle": "486c4eee671d9d0d4de3b138d65f58e7",
+    "equals": "model blk9 state input at round 8"
+   },
+   {
+    "rtl_cycle_round_ff": 8,
+    "rtl_register_after_this_cycle": "aa8f5f0361dde3ef82d24ad26832469a",
+    "equals": "model blk9 state input at round 9"
+   },
+   {
+    "rtl_cycle_round_ff": 9,
+    "rtl_register_after_this_cycle": "a49c7ff2689f352b6b5bea43026a5049",
+    "equals": "model blk9 state input at round 10"
+   },
+   {
+    "rtl_cycle_round_ff": 10,
+    "rtl_register_after_this_cycle": "193de3bea0f4e22b9ac68d2ae9f84808",
+    "equals": "model blk9 state input at round 11"
+   },
+   {
+    "rtl_cycle_round_ff": 11,
+    "rtl_register_after_this_cycle": "3243f6a8885a308d313198a2e0370734",
+    "equals": "plaintext (model state after round 11)"
+   }
+  ]
+ }
+}

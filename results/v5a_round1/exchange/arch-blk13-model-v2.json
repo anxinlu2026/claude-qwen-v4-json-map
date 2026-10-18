@@ -1,0 +1,140 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk13",
+ "name": "round_mux",
+ "order": 13,
+ "function_text": "model.py:round_step(state, rk, r) selects: r = 1 -> add_round_key(state, rk[10]); r = 2..10 -> inv_mix_columns(add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[11-r])); r = 11 -> add_round_key(inv_sub_bytes(inv_shift_rows(state)), rk[0]). CLI (selection only): round_mux <initial_path 32 hex> <round_path 32 hex> <final_path 32 hex> <round_cnt hex> -> the path chosen by round_cnt (1: initial, 2..10: round, 11: final), 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "initial_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   },
+   {
+    "name": "round_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_mix_columns.state_out"
+   },
+   {
+    "name": "final_path",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   },
+   {
+    "name": "round_cnt",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "always",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_counter.round_cnt"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_next",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.state_next"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_next",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "round_cnt = 1: initial_path(只有 AddRoundKey);2..10: round_path(InvShiftRows->InvSubBytes->AddRoundKey->InvMixColumns);11: final_path(InvShiftRows->InvSubBytes->AddRoundKey)",
+   "spec_ref": "FIPS 197 Sec 5.3"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "round_step"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(第 63-73 行 round_ff 次態):判定為 TB 要求的修正加規格配套。待機保持 0(TB 84 的 start 在 t=25 要被接受,依據 top a0)、start 接受後進 1、等 key_done、遞增到 11 再回 0。對照模型時程:update 情形 o_done 在 row 22、no-update 在 row 12 與 arch-top 的 schedule 完全一致(HDL 的 RUN #199 與 hdl-top-rtl-v1 start_accepted)。c2(round_ff==1 時 ShiftRows 的輸入改為 AddRoundKey):判定為標準要求的修正(初始步驟只有 AddRoundKey,Sec 5.3),是『針對第 1 輪的例外』,但是標準規定的結構例外,不是針對測試向量的值;證據是 round_ff=1 那拍的值 c65106…(含 InvMixColumns)改成 eb40f2…,後者等於模型 blk9 第 2 輪的 state 輸入。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk13-rtl-v1.json#rtl_changes.c1,c2",
+    "hdl-top-rtl-v1.json#start_accepted",
+    "FIPS 197 Sec 5.3"
+   ]
+  },
+  {
+   "id": "a12",
+   "type": "doubt",
+   "text": "風險(不阻擋結案):重置後以 i_update_key=0 開始(AA9,規格未定義)時,round_ff 會停在 1 等 key_done 而 key_done 永遠為 0,運算不會結束。TB 與 cocotb 的第一次都是 update=1,所以不影響通過。請說明這個行為是否是修改前就有的,以及你的看法;我不要求修改。",
+   "basis": "spec",
+   "refs": [
+    "arch-top-model-v0.json#AA9",
+    "verif/tb_aes128_dec.sv:84-85"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1,c2",
+   "decision": "accepted",
+   "reason": "c1 為 TB 要求;c2 為標準要求的初始步驟。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3",
+    "verif/tb_aes128_dec.sv:29-57"
+   ]
+  },
+  {
+   "id": "d12",
+   "about": "q2",
+   "decision": "model_kept",
+   "reason": "RTL 現在也是 11 個輪次(1..11)後回 0,與 AA3 一致;額外拍已消除。",
+   "basis": "testbench",
+   "refs": [
+    "hdl-top-rtl-v1.json#start_accepted"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

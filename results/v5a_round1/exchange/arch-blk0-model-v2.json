@@ -1,0 +1,83 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk0",
+ "name": "load_block",
+ "order": 0,
+ "function_text": "model.py:load_block(i_data:int128) -> list of 16 bytes. byte n = i_data[127-8n -: 8] (n = 0..15), state row n%4, column n//4. CLI: model_cli.py block load_block <i_data 32 hex> -> 32 hex, identical digits (pure wiring).",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "i_data",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0 (start row)",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "design port.i_data"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_in",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0; captured by state_reg at the start edge",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.state_in"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_in[r][c]",
+   "type": "combinational",
+   "width": 8,
+   "reset_value": "n/a",
+   "updates_when": "always (wiring)",
+   "next_value": "i_data byte (r + 4c), byte 0 = bits[127:120]",
+   "spec_ref": "verif/tb_aes128_dec.sv:33-43; FIPS 197 Sec 3.4 (s[r,c] = in[r+4c])"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "load_block"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(第 87 行 載入索引 4*i+j -> 4*j+i):判定為規格或標準要求的修正。依據 TB 33-43 的矩陣與 FIPS 197 Sec 3.4(s[r,c]=in[r+4c]);修改前後的 harness 結果(2 列 mismatch 轉置型態 -> 2/2 match、input check 1/1)是動態證據。修改不含任何值的特例。",
+   "basis": "testbench",
+   "refs": [
+    "hdl-blk0-rtl-v1.json#rtl_changes.c1",
+    "verif/tb_aes128_dec.sv:33-43",
+    "FIPS 197 Sec 3.4"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1",
+   "decision": "accepted",
+   "reason": "規格要求的修正,索引對所有輸入一致。",
+   "basis": "testbench",
+   "refs": [
+    "verif/tb_aes128_dec.sv:33-43"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

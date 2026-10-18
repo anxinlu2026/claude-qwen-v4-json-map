@@ -1,0 +1,124 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk1",
+ "name": "state_reg",
+ "order": 1,
+ "function_text": "model.py:Top.state (16 bytes). Per edge: load_sel -> load_block output; else round_cnt != 0 -> round_step(...) = state_next; else hold. Reset 0. Not a pure function; no CLI.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state_in",
+    "width": 128,
+    "kind": "data-valid-with(i_start)",
+    "valid_when": "row 0 only",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "load_block.state_in"
+   },
+   {
+    "name": "state_next",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "rows with round_cnt = 1..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_mux.state_next"
+   },
+   {
+    "name": "load_sel",
+    "width": 1,
+    "kind": "one-cycle pulse",
+    "valid_when": "row 0",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_counter.start_accept"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "q",
+    "width": 128,
+    "kind": "held",
+    "valid_when": "row 1 onward; plaintext when o_done = 1",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 1,
+    "latency_max_cycles": 1,
+    "connected_to": "add_round_key.state, inv_shift_rows.state, output_map.q"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state[r][c]",
+   "type": "register",
+   "width": 8,
+   "reset_value": "0",
+   "updates_when": "clk 上升沿",
+   "next_value": "load_sel(start 被接受,即 i_start=1 且閒置) -> state_in;否則 round_cnt != 0 -> state_next;否則保持",
+   "spec_ref": "task prompt; AA7, AA8"
+  },
+  {
+   "name": "o_data (相同位元)",
+   "type": "combinational",
+   "width": 128,
+   "reset_value": "0",
+   "updates_when": "always",
+   "next_value": "state 的位元組 n(row n%4, col n//4)放在 o_data[127-8n -: 8],見 blk14",
+   "spec_ref": "verif/tb_aes128_dec.sv:55-57"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "Top.state"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "text": "c1(第 89 行,等待 key_done 時資料暫存器保持):判定為規格上必要的控制配套(update 情形要等金鑰展開完才開始第一輪,task prompt 與 AA1;資料在 start 當拍已鎖住,TB 52 把 i_data 清 0,所以等待期間不能被覆寫)。不是特例。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk1-rtl-v1.json#rtl_changes.c1",
+    "verif/tb_aes128_dec.sv:49-52"
+   ]
+  },
+  {
+   "id": "a12",
+   "type": "suggestion",
+   "text": "切點平移的對照我給出具體對應(見 arch-blk1-harness-v2.json#register_mapping):RTL 暫存器在第 r 輪那拍結束後的值,等於模型 blk9 在第 r+1 輪的 state 輸入(r=1..10);第 11 輪後等於明文。你只對 r=1 做了確認(eb40f2…)。aligned 可以成立(端到端 TB 與官方測試都過,且 r=1 與 r=11 的值吻合);r=2..10 的逐輪對照請檢查,屬於加強而非阻擋。",
+   "basis": "spec",
+   "refs": [
+    "arch-blk1-harness-v2.json#register_mapping",
+    "hdl-blk1-rtl-v1.json#unknown"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1",
+   "decision": "accepted",
+   "reason": "控制配套,非特例。",
+   "basis": "spec",
+   "refs": [
+    "task prompt"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

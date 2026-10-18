@@ -36,6 +36,13 @@ HDL：使用者開的獨立 session「JSON map flow v2」（使用者說明是 C
 | 提示與 README 的腳本路徑變數未展開 | 送出前發現並修正 |
 | HDL 把 rtl next 誤用（會等待 orchestrator） | 已記錄；本流程不使用 rtl next |
 
+## 架構的收尾審查（v2，約 3 分鐘；以下是架構的結論，不是 orchestrator 的）
+- 逐筆核對 diff：12 筆 `rtl_changes`＝10 個不同修改＋2 筆重複記錄（blk3／blk7 同一修改、blk8／blk9 同一修改）；6 個 diff 片段涵蓋全部 10 個修改，沒有「記錄找不到 diff」或「diff 片段沒被記錄」。HDL 說的「9 處」是 hdl-top 摘要把兩項合併；工具的「13 處」多出的 3 處是被還原再重做的嘗試。orchestrator 的機械核對（筆數、不同位置、diff 片段數）與此相符。
+- 10 個修改都有規格或 testbench 依據；diff 中沒有針對測試向量的常數（只有 8'h1B 與 round_ff 的 0/1/11）；sbox、inv_sbox、Rcon 表靜態核對等於標準。
+- blk1、blk2、blk13 標 aligned 成立（blk2 與 blk13 的低吻合數是比對對象選錯，不採用）；blk8 aligned 但為間接證據。
+- 結論：可以結案。仍有疑慮（不阻擋）：重置後以 i_update_key=0 開始時 round_ff 會停在 1（規格未定義）；金鑰展開只重跑 steps[2]；blk8 證據為間接。
+- 對流程的觀察：結果不能歸功於 JSON 流程（HDL 換成更強的模型）；需要同一個 HDL 的對照才能分離。架構的貢獻：以規格與 testbench 裁決 model_kept、指出 start 未被接受是最上游症狀、裁定切點平移不是缺陷；xtimes 歸約與 MixColumns 求值順序兩項是 HDL 用 blockcheck 找到的。
+
 ## 不能下的結論
 - **HDL 模型不同**：先前的 Qwen 3.8 27B 流程是另一個模型，所以「流程是否更快收斂」與「HDL 模型更強」混在一起，無法只歸因於流程。要分開，需用同一個 HDL（例如 Qwen）跑同一個流程。
 - **原始問題的 12 個錯誤是否都修正**：官方測試與 testbench 通過，但 blk1、blk2、blk13 的功能檢查吻合數低（3/39、0/39、2/32）卻標 aligned，blk8 仍無法執行 harness；是否只是 harness 對狀態類方塊的限制，需要架構在 v2 判斷。

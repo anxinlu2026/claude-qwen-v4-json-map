@@ -1,0 +1,59 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk4",
+ "name": "rot_word",
+ "order": 4,
+ "function_text": "model.py:rot_word(w: 4 bytes) -> [w1,w2,w3,w0]. CLI: rot_word <w3 8 hex> -> 8 hex. Example 09cf4f3c -> cf4f3c09.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "w3",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.prev_round_key"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "rot",
+    "width": 32,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "sub_word.rot"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "rot",
+   "type": "combinational",
+   "width": 32,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "[w1, w2, w3, w0](byte 向左旋 1)",
+   "spec_ref": "FIPS 197 Sec 5.2 RotWord"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "rot_word"
+ },
+ "to_hdl": [],
+ "decisions": [],
+ "status": "aligned",
+ "no_change": true
+}

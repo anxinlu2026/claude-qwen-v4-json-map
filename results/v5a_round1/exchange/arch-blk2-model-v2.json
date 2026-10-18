@@ -1,0 +1,149 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk2",
+ "name": "round_key_store",
+ "order": 2,
+ "function_text": "model.py:Top.rk (11 lists of 16 bytes). Per edge: rk0_load -> rk[0] = bytes of i_key (byte 0 = MSB); key_cnt = n != 0 -> rk[n] = next_round_key(rk[n-1], n). Not pure; no CLI.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "rk0_in",
+    "width": 128,
+    "kind": "data-valid-with(upd_load)",
+    "valid_when": "row 0 of an update start",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "design port.i_key"
+   },
+   {
+    "name": "rk_next",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_expand_step.next_round_key"
+   },
+   {
+    "name": "key_idx",
+    "width": 4,
+    "kind": "level",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_counter.key_cnt"
+   },
+   {
+    "name": "rk0_load",
+    "width": 1,
+    "kind": "one-cycle pulse",
+    "valid_when": "row 0 of an update start",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "key_counter.upd_load"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "rk_prev",
+    "width": 128,
+    "kind": "data-valid-with(key_cnt)",
+    "valid_when": "key_cnt = 1..10",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 1,
+    "connected_to": "key_expand_step.prev_round_key"
+   },
+   {
+    "name": "rk_all",
+    "width": 1408,
+    "kind": "held",
+    "valid_when": "rk[0] from row 1 of an update; rk[n] from row n+1; all valid when key_done = 1",
+    "clock": "clk",
+    "edge": "pos",
+    "storage": "registered",
+    "latency_min_cycles": 1,
+    "latency_max_cycles": 1,
+    "connected_to": "round_key_select.rk_all"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "rk[0]",
+   "type": "register",
+   "width": 128,
+   "reset_value": "0",
+   "updates_when": "start 被接受且 i_update_key=1",
+   "next_value": "i_key(byte 0 = MSB)",
+   "spec_ref": "task prompt; AA8, AA10"
+  },
+  {
+   "name": "rk[n], n=1..10",
+   "type": "register",
+   "width": 128,
+   "reset_value": "0",
+   "updates_when": "展開第 n 步結束",
+   "next_value": "next_round_key(rk[n-1], n)",
+   "spec_ref": "FIPS 197 Sec 5.2"
+  },
+  {
+   "name": "key_done",
+   "type": "register",
+   "width": 1,
+   "reset_value": "0",
+   "updates_when": "update 起點清 0;第 10 步結束後置 1;之後保持",
+   "next_value": "見 AA12",
+   "spec_ref": "task prompt: expand first, then decrypt"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "Top.rk"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(key_exp_steps_ff 到 bit[STEPS] 後保持):判定為規格要求的修正。TB 84-85 的第二次呼叫 Simple_test(0) 重用已存金鑰,key_done 必須在展開完成後保持為 1(task prompt:i_update_key=0 時使用儲存的展開金鑰)。修改前 bit10 從未為 1(動態證據)。function check 欄 39 列 mismatch 是比對對象選錯(rk_prev 為整個 1408 位元),我同意不採用;input check 10/10(rk[1..10] 依序出現)與端到端是有效證據,aligned 成立。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk2-rtl-v1.json#rtl_changes.c1",
+    "verif/tb_aes128_dec.sv:84-85",
+    "tool-blk2-check-v1.json"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1",
+   "decision": "accepted",
+   "reason": "規格要求(儲存金鑰重用)。",
+   "basis": "spec",
+   "refs": [
+    "verif/tb_aes128_dec.sv:84-85"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

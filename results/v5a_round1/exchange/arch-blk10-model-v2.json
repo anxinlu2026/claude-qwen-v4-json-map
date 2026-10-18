@@ -1,0 +1,83 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk10",
+ "name": "inv_shift_rows",
+ "order": 10,
+ "function_text": "model.py:inv_shift_rows(state: 16 bytes) -> out[row r, col c] = in[row r, col (c-r) mod 4]; byte index 4*c + r. Row 0 unchanged. CLI: inv_shift_rows <state 32 hex> -> 32 hex. Example 000102..0f -> 000d0a0704010e0b0805020f0c090603.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "state_reg.q"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..11",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "inv_sub_bytes.state"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_out[r][c]",
+   "type": "combinational",
+   "width": 8,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "state[r][(c - r) mod 4](向右旋 r 格)",
+   "spec_ref": "FIPS 197 Sec 5.3.1"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "inv_shift_rows"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(第 158-174 行 ShiftRows 方向改為右旋,反向):判定為標準要求的修正(FIPS 197 Sec 5.3.1);我自己檢查 diff:row 1 為 out[c]=in[c-1]、row 2 旋 2、row 3 為 out[c]=in[c+1](等於右旋 3),正確。記錄不一致:hdl-blk10 的 replies 寫『修改未套用(proposed)』,但 rtl_changes.status 是 applied,且 diff 與 top 的 edit summary 都顯示已套用;請更正回覆文字。blk10 的 active_when 改為 round_ff>1 是合理的:模型的 round 1 不經過 blk10。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk10-rtl-v1.json#rtl_changes.c1",
+    "final_rtl_round1.diff",
+    "FIPS 197 Sec 5.3.1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1",
+   "decision": "accepted",
+   "reason": "標準要求;diff 已核對。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 5.3.1"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}

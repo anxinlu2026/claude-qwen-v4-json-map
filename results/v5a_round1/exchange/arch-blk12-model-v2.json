@@ -1,0 +1,82 @@
+{
+ "from": "arch",
+ "to": "hdl",
+ "round": 2,
+ "block": "blk12",
+ "name": "inv_mix_columns",
+ "order": 12,
+ "function_text": "model.py:inv_mix_columns(state: 16 bytes) -> per column c (bytes 4c..4c+3 = rows 0..3): out_r = 0E*a_r ^ ... with matrix rows [0E 0B 0D 09; 09 0E 0B 0D; 0D 09 0E 0B; 0B 0D 09 0E] applied to (a0,a1,a2,a3), GF(2^8) mod 0x11B. CLI: inv_mix_columns <state 32 hex> -> 32 hex.",
+ "spec_ref": "task prompt + FIPS 197",
+ "ports": {
+  "inputs": [
+   {
+    "name": "state",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "add_round_key.state_out"
+   }
+  ],
+  "outputs": [
+   {
+    "name": "state_out",
+    "width": 128,
+    "kind": "data-valid-with(round_cnt)",
+    "valid_when": "round_cnt = 2..10",
+    "clock": "none (combinational)",
+    "edge": "n/a",
+    "storage": "combinational",
+    "latency_min_cycles": 0,
+    "latency_max_cycles": 0,
+    "connected_to": "round_mux.round_path"
+   }
+  ]
+ },
+ "elements": [
+  {
+   "name": "state_out column c",
+   "type": "combinational",
+   "width": 32,
+   "reset_value": "n/a",
+   "updates_when": "always",
+   "next_value": "out0 = 0e a0 ^ 0b a1 ^ 0d a2 ^ 09 a3;out1 = 09 a0 ^ 0e a1 ^ 0b a2 ^ 0d a3;out2 = 0d a0 ^ 09 a1 ^ 0e a2 ^ 0b a3;out3 = 0b a0 ^ 0d a1 ^ 09 a2 ^ 0e a3(GF(2^8)))",
+   "spec_ref": "FIPS 197 Sec 5.3.3"
+  }
+ ],
+ "python": {
+  "module": "model.py",
+  "function": "inv_mix_columns"
+ },
+ "to_hdl": [
+  {
+   "id": "a11",
+   "type": "answer",
+   "replies_to": "h1",
+   "text": "c1(xtimes02/04/08 各自依前一級 msb 歸約):判定為標準要求的修正(GF(2^8) 的 xtime,FIPS 197 Sec 4.2.1)。c2(MixColumns 移到獨立迴圈並改係數):判定為標準要求的修正(FIPS 197 Eq. 5.19),我核對 diff 的四行係數:row r 為 0e·a_r ^ 0b·a_(r+1) ^ 0d·a_(r+2) ^ 09·a_(r+3),正確。迴圈拆分是修正 always_comb 中讀到尚未賦值的元素的寫法問題,屬於等價且必要的重寫(讓係數讀到的是已完成的 xtimes)。function check 32/32 match。",
+   "basis": "spec",
+   "refs": [
+    "hdl-blk12-rtl-v1.json#rtl_changes.c1,c2",
+    "FIPS 197 Eq. 5.19, Sec 4.2.1"
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "d11",
+   "about": "c1,c2",
+   "decision": "accepted",
+   "reason": "標準要求;diff 已核對。",
+   "basis": "spec",
+   "refs": [
+    "FIPS 197 Sec 4.2.1, 5.3.3"
+   ]
+  }
+ ],
+ "status": "aligned",
+ "no_change": false
+}
