@@ -28,6 +28,8 @@ PY
 [ -z "$miss" ] && ok "runner skills present on the host (skills/)" || bad "runner skills missing: $miss"
 [ "$h4" = "$(tree "$HERE/resources")" ] && ok "image resources = checkout" || bad "image resources differ"
 docker run --rm --entrypoint sh "$TAG" -c 'command -v iverilog verilator yosys qwen >/dev/null' && ok "iverilog, verilator, yosys, qwen present" || bad "tools missing in image"
+docker run --rm --entrypoint sh "$TAG" -c 'rtl assumption list' 2>&1 | grep -q 'Nothing recorded yet' && ok "rtl assumption is provided by the tool" || bad "rtl assumption missing in the tool"
+python3 "$HERE/flow/check_skill_commands.py" "$HERE" >/dev/null && ok "skills and roles name only commands the tool provides" || bad "a skill or role names a command the tool does not provide"
 
 # 2. rtl sim in the image: original design must FAIL (2 FAIL), reference solution must PASS (2 PASS)
 for case in original reference; do

@@ -77,7 +77,7 @@ HDL 期間 344 筆 `rtl` 呼叫（已排除約 6 筆 orchestrator 的）：
 | 技能與工具一致性檢查 | 啟動時檢查技能文件引用的指令是否存在 | 技能引用不存在的指令 |
 
 ### 6.3 我會怎麼做（確認後）
-**進度（2026-10-18）**：1、2 已完成並套用；agent.md 與技能統一用繁體。套用位置：舊 repo `01_plan/muti-agent-v2/{orchestrator,architecture,hdl}/agent.md`（只新增 42 行，沒改既有內容）與 `04_skills/{unit-alignment,change-review}/`（舊 repo commit `7c1a49e`），再同步到新 repo `roles/`、`skills/` 與工作副本 `multi-ai/skills/`。通用性檢查 0 個問題（`docs/drafts/check_general.py`）。尚未處理：技能文件裡 13 處引用不存在的 `rtl assumption`（`flow/check_skill_commands.py` 偵測）、6.2 的工具項目。
+**進度（2026-10-18）**：1、2 已完成並套用；agent.md 與技能統一用繁體。套用位置：舊 repo `01_plan/muti-agent-v2/{orchestrator,architecture,hdl}/agent.md`（只新增 42 行，沒改既有內容）與 `04_skills/{unit-alignment,change-review}/`（舊 repo commit `7c1a49e`），再同步到新 repo `roles/`、`skills/` 與工作副本 `multi-ai/skills/`。通用性檢查 0 個問題（`docs/drafts/check_general.py`）。`rtl assumption`（技能文件 13 處引用，`flow/check_skill_commands.py` 偵測）已依使用者決定補進工具（移植自較新的工具版本，只加 `ledger_text`、`carry_over`、`cmd_assumption` 與接線），映像重建，實測 add、add --fact、set（無證據拒絕、有證據通過）、list 都正常；檢查工具現為 0 個問題，並加入 `scripts/verify.sh`。尚未處理：6.2 的其餘工具項目。
 
 原計畫：
 1. 先寫「通用原則」的 agent.md 修改稿（每個角色一份差異），給你看，不直接改。

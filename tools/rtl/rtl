@@ -625,6 +625,7 @@ def cmd_ask(args):
                     v['attempts'] = 0
             save(st)
             print(f'ORCHESTRATOR ANSWER {n}:\n' + open(ans).read().strip())
+            print(carry_over(None, st))
             return
         time.sleep(3)
     print(f'No answer within {limit // 60} min. Do not change the method on your own: summarise what is confirmed and what is not, and stop.')
@@ -913,6 +914,84 @@ def cmd_mark(args):
     print(f'{sig}: {status}.' + ('  Now run: rtl sim' if status == 'fixed' else '  Now: rtl ask "..."' if status == 'nogolden' else '') + '   (what to do next: rtl next)')
 
 
+def ledger_text(st, only_open=False):
+    """The agent's own conclusions: its assumptions (object, status, evidence) and the facts it has measured (kept by the tool, written by the agent)."""
+    L = st.get('assumptions', [])
+    if only_open:
+        L = [a for a in L if a.get('status') == 'open']
+    out = []
+    for kind, title in (('assumption', 'Assumptions'), ('fact', 'Facts you measured')):
+        rows = [a for a in L if a.get('kind', 'assumption') == kind]
+        if not rows:
+            continue
+        lines = []
+        for a in rows:
+            h = a.get('history', [])
+            ch = (' (was: ' + ' -> '.join(x['status'] for x in h) + ')') if h else ''
+            lines.append(f'  {a["id"]} [{a["status"]}]{ch} {a["object"]}' + (f'\n      evidence: {a["evidence"]}' if a.get('evidence') else '') + (f'  (order: {a["order"]})' if a.get('order') else ''))
+        out.append(title + ':\n' + '\n'.join(lines))
+    return '\n'.join(out)
+
+
+def carry_over(req, st):
+    """After each answer of the orchestrator: what the agent itself has concluded (its assumptions with their status and evidence, and the
+    comparisons on record), kept by the tool and written by the agent. The reasoning of earlier work orders does not stay in the
+    agent's context; its conclusions do, here."""
+    out = []
+    led = ledger_text(st)
+    if led:
+        out.append('On record (yours: object, status, evidence; change with rtl assumption set):\n' + led)
+    marks = st.get('marks', {})
+    if marks:
+        out.append('Comparisons on record now (signal: status):\n' + '\n'.join(f'  {k_}: {v["status"]} (edits {v.get("attempts", 0)})' for k_, v in marks.items()))
+    return ('\n' + '-' * 60 + '\nFrom your own record:\n' + '\n'.join(out) + '\n' + '-' * 60) if out else ''
+
+
+def cmd_assumption(args):
+    """The agent's own record: assumptions (open / proven / struck-out) and facts it has measured (established / retracted)."""
+    st = load(); L = st.setdefault('assumptions', [])
+    sub = args[0] if args else 'list'
+    if sub == 'add':
+        fact = len(args) > 1 and args[1] == '--fact'
+        rest = args[2:] if fact else args[1:]
+        if fact:
+            text = rest[0].strip() if rest else ''
+            ev = ' '.join(rest[1:]).strip()
+            if len(text) < 10 or len(ev) < 8:
+                die('Usage: rtl assumption add --fact "THE FACT you measured" "evidence: tool run numbers and result lines (shell calls: command and value)"')
+            n = max([int(a['id'][1:]) for a in L if a.get('kind') == 'fact'] + [0]) + 1
+            L.append({'id': f'F{n}', 'kind': 'fact', 'object': text, 'status': 'established', 'evidence': ev, 'order': st.get('order_type', ''), 'history': []})
+            save(st); print(f'Recorded F{n} [established]: {text}')
+            return
+        text = ' '.join(rest).strip()
+        if len(text) < 10:
+            die('Usage: rtl assumption add "OBJECT: what you assume about which block / signal / behaviour"   (a measured fact: rtl assumption add --fact "FACT" "evidence")')
+        n = max([int(a['id'][1:]) for a in L if a.get('kind', 'assumption') == 'assumption'] + [0]) + 1
+        L.append({'id': f'A{n}', 'kind': 'assumption', 'object': text, 'status': 'open', 'evidence': '', 'order': st.get('order_type', ''), 'history': []})
+        save(st); print(f'Recorded A{n} [open]: {text}')
+    elif sub == 'set':
+        if len(args) < 3:
+            die('Usage: rtl assumption set A3 proven|struck-out|open "evidence"   or   rtl assumption set F2 established|retracted "evidence"')
+        aid, status = args[1], args[2].replace('_', '-').lower()
+        a = next((x for x in L if x['id'] == aid), None)
+        if not a:
+            die(f'No entry {aid}. Recorded: ' + ', '.join(x['id'] for x in L))
+        is_fact = a.get('kind') == 'fact'
+        allowed = ('established', 'retracted') if is_fact else ('proven', 'struck-out', 'open')
+        if status not in allowed:
+            die('The status of ' + aid + ' is ' + ', '.join(allowed) + '.')
+        ev = ' '.join(args[3:]).strip()
+        if status not in ('open',) and len(ev) < 8:
+            die('A conclusion needs its evidence: rtl assumption set ' + aid + ' ' + status + ' "tool run numbers and result lines"')
+        new = 'struck out' if status == 'struck-out' else status
+        if new != a['status']:
+            a.setdefault('history', []).append({'status': a['status'], 'evidence': a.get('evidence', '')})
+        a['status'] = new; a['evidence'] = ev or a.get('evidence', ''); a['order'] = st.get('order_type', a.get('order', ''))
+        save(st); print(f'{aid} is now [{new}].')
+    else:
+        print(ledger_text(st) or 'Nothing recorded yet. Record each assumption you work on: rtl assumption add "OBJECT: claim"; each fact you measured and will need again: rtl assumption add --fact "FACT" "evidence"')
+
+
 def cmd_next(args):
     """Report on the current work order and get the next one (work-order mode), or tell the next step by fixed rules."""
     st = load(); rows = row_status(st)
@@ -970,6 +1049,7 @@ def advise(st, head, rule_text, question):
             st = load(); st['next_pending'] = None; st['order_t'] = time.time(); st.setdefault('events', []).append('advice'); save(st)
             text = open(ans).read().strip()
             print(f'ORCHESTRATOR ANSWER {k}:\n' + text)
+            print(carry_over(None, st))
             if text.upper().startswith('CONVERSATION COMPLETE'):
                 open(os.path.join(WORK, 'conv_done'), 'w').write(str(k))
                 print('-' * 60 + '\nThis conversation is complete. Write the closing lines the answer asks for as your final message. Do not run any further command.')
@@ -1115,7 +1195,7 @@ def gate(cmd, args=()):
             'checkpoint and a comparison. Undo the outside change with: rtl revert last')
     # before the task sheet: reading, one run of the testbench on the untouched design, and validating a model of the library
     lib_model = cmd == 'model' and len(args) == 1 and os.path.realpath(args[0]).startswith(os.path.realpath(LIB) + os.sep)
-    if cmd in ('show', 'signals', 'log', 'status', 'diff') or lib_model or (cmd == 'sim' and not [x for x in st.get('runs', []) if not x.get('probe')]):
+    if cmd in ('show', 'signals', 'log', 'status', 'diff', 'assumption') or lib_model or (cmd == 'sim' and not [x for x in st.get('runs', []) if not x.get('probe')]):
         return
     if not os.path.exists(SHEET):
         die(f'STOP: {SHEET} does not exist. Classify the task and write the task sheet first (see the kick-off instructions); then run this command again.')
@@ -1161,6 +1241,7 @@ HELP = """rtl - simulator and file operations for RTL work
   rtl log N [--full]            output of run N (--full = unfiltered)
   rtl history [N] [WORD]        earlier commands and their results, also from earlier conversations (WORD = part of the command)
   rtl ask "MESSAGE"             notify the orchestrator and wait for instructions
+  rtl assumption add "OBJECT: claim" | set A3 proven|struck-out|open "evidence" | list   your own record of assumptions
   rtl sheetsubmit               submit the task sheet to the orchestrator for review and wait
   rtl model DIR                 run the validation of a golden model and record it (needed before comparing and editing)
   rtl blockcheck --in SIG.. --out SIG --model "CMD"   feed the probed inputs of a block to the model, compare its output, record the result
@@ -1170,7 +1251,7 @@ HELP = """rtl - simulator and file operations for RTL work
 if __name__ == '__main__':
     a = sys.argv[1:]
     table = {'sim': cmd_sim, 'signals': cmd_signals, 'probe': cmd_probe, 'show': cmd_show, 'replace': cmd_replace, 'insert': cmd_insert,
-             'checkpoint': cmd_checkpoint, 'revert': cmd_revert, 'diff': cmd_diff, 'status': cmd_status, 'log': cmd_log, 'ask': cmd_ask, 'model': cmd_model, 'blockcheck': cmd_blockcheck, 'history': cmd_history, 'mark': cmd_mark, 'next': cmd_next, 'sheetsubmit': cmd_sheetsubmit}
+             'checkpoint': cmd_checkpoint, 'revert': cmd_revert, 'diff': cmd_diff, 'assumption': cmd_assumption, 'status': cmd_status, 'log': cmd_log, 'ask': cmd_ask, 'model': cmd_model, 'blockcheck': cmd_blockcheck, 'history': cmd_history, 'mark': cmd_mark, 'next': cmd_next, 'sheetsubmit': cmd_sheetsubmit}
     if not a or a[0] not in table:
         print(HELP); sys.exit(0 if not a or a[0] in ('help', '-h', '--help') else 1)
     # a note the orchestrator left for the agent is delivered with the next command, whatever it is
@@ -1199,7 +1280,7 @@ if __name__ == '__main__':
     def _keep():
         try:   # tell how much of the work order's time is used: the agent has no clock of its own
             lim = int(os.environ.get('RTL_ORDER_LIMIT_S', '0'))
-            if lim and a[0] not in ('next', 'ask', 'sheetsubmit') and os.path.exists(STATE):
+            if lim and a[0] not in ('next', 'ask', 'sheetsubmit', 'assumption') and os.path.exists(STATE):
                 t0_ = json.load(open(STATE)).get('order_t')
                 if t0_:
                     used = time.time() - t0_
