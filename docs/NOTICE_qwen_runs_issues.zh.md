@@ -10,7 +10,7 @@
 | A1 | **驅動 bug：逾時後沒保存 session，每小時重新開一個新對話** | v6m 的四個 session，第一則訊息都是完整任務提示，開始時間剛好每小時一個；`.hdl-session-id` 不存在 | 驅動只在輪次正常結束（有 JSON）時才存 session id；逾時被殺的輪次沒有 JSON。**責任：驅動（orchestrator 寫的）** | Qwen 每小時從零重讀全部材料，4 小時只寫出 2 份；我先前說「前置讀檔 1 小時 40 分」是錯的 | 已修（從對話記錄檔名找回 id 並 `--resume`）| 加自我檢查：續跑時若新 session 的第一則訊息等於原提示，立刻警示；為「逾時後接續」寫一個測試 |
 | A2 | **隔離不足：`--allowedTools` 不是限制** | v6n：Qwen 從 repo 根目錄 `find`，輸出列出第一次運行的結果檔名；測試中 `ls /tmp`、`find /`、`head /etc/hosts` 都成功、`permission_denials` 為空 | 以為允許清單是限制，其實只是預先核准；只驗證過「範圍外寫檔沒被寫出」，沒驗證 Bash。**責任：orchestrator** | Qwen 看到第一次運行的檔名（沒有讀內容，已查 26 個工具呼叫）；v6n 作廢 | 已修（`--permission-mode dontAsk` 加路徑限定規則，兩次煙霧測試）| 規則仍是盡力而為（路徑可用 `..` 繞、`cp` 可複製）；要真正隔離，改在只掛載必要目錄的容器內跑；`results/` 也不要放在 Qwen 能碰到的目錄樹下 |
 | A3 | **提示含上一個 HDL 沙盒的句子**：「需要 docker 權限，請向使用者要求核准」 | v6q 第 1 輪 734 秒、約 30 萬 token、15 個模型回合，**一個工具都沒用**，結尾反過來要我「核准 Docker」 | 我沿用第一次運行的提示，沒有依介面調整。**責任：orchestrator** | 損失約 12 分鐘；兩次運行的提示不同 | 已修（句子改成「已核准使用」，「請繼續」訊息含授權）| 提示模板要與介面無關；建新 cell 時自動檢查提示裡有沒有「請向使用者…核准」這類字句 |
-| A4 | **thinking 預設開，無法用環境變數關閉** | v6q：30 個 thinking 區塊、約 9 萬字元，1 小時 21 分寫出 1 份；`MAX_THINKING_TOKENS=0` 仍有 2 個區塊；Ollama 原生 `think:false` 在 Anthropic 端點無效；只有請求帶 `thinking:{type:disabled}` 有效（輸出 1 個 token，預設 23 個）| Claude Code 不送這個參數。**責任：環境** | v6q 作廢（只當對照）；之後的速度大幅提升 | 已修（本機代理 `flow/ollama_proxy.py --no-think`）| 把「關 thinking」做成驅動的預設選項並隨驅動啟動代理；在文件寫明這個限制 |
+| A4 | **thinking 預設開，無法用環境變數關閉** | v6q：30 個 thinking 區塊、約 9 萬字元，1 小時 21 分寫出 1 份；`MAX_THINKING_TOKENS=0` 仍有 2 個區塊；Ollama 原生 `think:false` 在 Anthropic 端點無效；只有請求帶 `thinking:{type:disabled}` 有效（輸出 1 個 token，預設 23 個）| Claude Code 不送這個參數。**責任：環境** | v6q 作廢（只當對照）；之後的速度大幅提升 | 已修（本機代理 `flow/ollama_proxy.py --no-think`；詳見 I 節）| 把「關 thinking」做成驅動的預設選項並隨驅動啟動代理；在文件寫明這個限制 |
 | A5 | **比較條件不一致（混淆因素）** | 見下方 E 節 | 多項差異同時存在 | 兩次運行的差異不能只歸因於模型 | 需在報告註明 | 在報告開頭放混淆因素表 |
 
 ## B. 卡住與浪費時間的問題
@@ -90,6 +90,47 @@
 - **本機代理關 thinking**、**`dontAsk` 加路徑限定規則**：兩者都用實測驗證過才採用。
 - **工具輸出的錯誤訊息要告訴 HDL 怎麼改**：C5 的 ERROR 與 HINT 就是這個原則；模型有看到工具的錯誤輸出才有機會自己修。
 - 工具檢查必須同時用「別人（第一次運行）的正確檔案」做回歸測試，避免誤報（C5 的誤報就是這樣發現的）。
+
+## I. thinking 設定問題：用 Claude Code 當介面帶來的差異與解法
+
+**背景**：先前的 Qwen 流程（walk5、委派實驗）用 Qwen Code，啟動參數明確是 `--reasoning-effort none`（thinking 關閉），這是有意的設定（thinking 關閉的 Qwen 在答案文字裡推理）。改用 Claude Code 當介面後，**這個設定沒有被帶過來**，而且在這個介面下沒有簡單的開關。
+
+**問題**：Claude Code 不會對 Ollama 送出「關閉 thinking」的參數；Ollama 對標示有 `thinking` 能力的模型，預設是開。結果 Qwen 每一步都先思考。
+
+**實測（單一問題「1+1」，直接打 Ollama 的 `/v1/messages`；耗時因同時有其他工作搶模型而偏大，只看相對關係）**
+
+| 請求寫法 | 回應區塊 | thinking 字元 | 輸出 token |
+|---|---|---|---|
+| 預設（不帶任何 thinking 參數）| thinking＋text | 30 | 23 |
+| `thinking: {type: disabled}` | **只有 text** | **0** | **1** |
+| `thinking: {type: enabled, budget_tokens: 1024}` | thinking＋text | 38 | 32 |
+| Ollama 原生欄位 `think: false` | thinking＋text | 30 | 24 |
+
+| Claude Code 的做法（`echo hello` 小任務）| thinking 區塊 | thinking 字元 | 耗時 |
+|---|---|---|---|
+| 預設 | 有 | — | — |
+| 環境變數 `MAX_THINKING_TOKENS=0` | **仍有 2 個** | 1453 | 331 秒（當時有其他工作搶模型）|
+| 經本機代理（加 `thinking: disabled`）| **0** | 0 | 28 秒 |
+
+**結論**：只有請求帶 `thinking: {type: disabled}` 才真正關閉；`MAX_THINKING_TOKENS=0` 與 Ollama 的 `think:false` 在這個介面與端點下都無效。Modelfile 也無法關閉（這個模型用 Ollama 內建的轉譯器，thinking 由 API 參數控制）。
+
+**解法**：在 Claude Code 與 Ollama 之間放一個本機代理 `flow/ollama_proxy.py --no-think`（埠 11435），替每個 `/v1/messages` 請求加上 `thinking: {type: disabled}`，其餘原樣轉送（含串流）。驅動用 `--base-url http://127.0.0.1:11435` 指向它。
+
+**驗證與實際效果**
+- 實際運行的對話記錄：v6q（沒有代理，thinking 開）停止前，主 session 有 **30 個 thinking 區塊、約 9 萬字元**，1 小時 21 分只寫出 1 份對應表；v6n 與 v6m（有代理）**thinking 區塊 0**（v6m 四個以上的 session、245 個工具呼叫，全程 0）。
+- 速度：開 thinking 時約每 2 分鐘一個工具呼叫；關閉後約每 10 到 20 秒一個，對應表約每 10 到 15 分鐘一份。
+- 確認方法：不要看 `usage` 裡的 `thinking_tokens`（在這個介面下永遠是 0，不準）；要數對話記錄（`cc_cfg/projects/*/*.jsonl`）裡 `type = thinking` 的區塊數與字元數。
+
+**限制與風險**
+1. 代理是額外的一個元件，要記得先啟動；沒啟動時驅動會失敗或（若指到 11434）退回 thinking 開。**建議驅動啟動時檢查代理存活，並在每輪結束時數 thinking 區塊，非 0 就警示。**
+2. 我只能從結果（有沒有 thinking 區塊）判斷，看不到 Claude Code 實際送給 Ollama 的內容；代理直接測試（1 token 輸出）是最直接的證據。
+3. **未驗證**：其他取樣設定是否也因介面而不同。Ollama 模型自帶的參數是溫度 0.6、`top_p` 0.95、`top_k` 20、`presence_penalty` 0.5、`frequency_penalty` 0.5、`repeat_penalty` 1.1、`num_ctx` 262144；先前 Qwen Code 流程明確傳了溫度 0.6 與三個懲罰值。Claude Code 的請求是否覆寫了這些，我沒有驗證；比較報告要註明「取樣參數可能不同」。
+4. thinking 關閉與先前的 Qwen 流程一致，但與第一次運行（Codex／Claude session）的設定未知，不能直接比較速度。
+
+**建議（通用）**
+- 換介面或換 agent 時，把「模型設定清單」（thinking、溫度、懲罰、上下文長度、逾時）列出來逐項核對；設定要明確記錄，不依賴預設。
+- 把「關 thinking」做成驅動的預設選項（含代理的啟動與存活檢查）。
+- 設定的驗證要看原始記錄（對話記錄中的區塊），不看摘要欄位。
 
 ## 協助 Qwen 的記錄（比較報告要列，這些改變了比較條件）
 | 時間 | 協助 | 內容 |
