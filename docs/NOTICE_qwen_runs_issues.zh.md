@@ -33,6 +33,7 @@
 | C4 | **漏了範圍與洞察**：blk1 的 `rtl_map` 漏了下一狀態（83–101）、沒發現切點與架構不同 | Codex 兩者都有 | 模型 | 無（品質差異，記入比較）|
 | C5 | **工具檢查補強（2026-10-19 09:2x）：signal 欄位與一致性** | 依 C1、C3 補兩個檢查：①`validate_json`：`signal` 欄位必須是 RTL 訊號名（多個用 `+` 併接、陣列 `x[0][1]`、範圍 `x[127:120]`、層級路徑可在方括號後再接 `.名稱`）、常數 `=值`、或 `none／unknown／n/a`，說明文字不行；功能檢查列數為 0 時，信心度不得為 high、狀態不得為 aligned（除非頂層有 `alternative_evidence`，或暫存器對應檢查全部看到）。②`block_harness`：探測遇到不能讀的訊號名時，印出 ERROR 與 HINT，寫入 tool 檔的 `error`，並**不把假的 0 列寫進 hdl 檔的 `harness_result`**。 | 工具（orchestrator 補）| 之後新增欄位時，同步為「該欄位是否能被工具使用」加檢查，並用別人的正確檔案做回歸測試 |
 | C6 | **實證：欄位不可用使 harness 完全沒有價值（blk0 到 blk3）** | Qwen 的 blk3 `signal` 是說明文字，harness 直接 `rtl probe (byte n of) …`，得到 `PROBE ERROR: cannot read signal name`，功能檢查 0 列；Codex 同一個 blk3 填 `…expanded_key_ff[1151:1024]`、`=3`、`…step_key[2]`，得到 26 列、24 列不符，原始列直接顯示字 0 與字 2 互換，架構後來靠它確認問題（對照表見下方「C6 對照」）| 模型加工具（當時工具沒擋）| 已由 C5 擋住；Qwen 修正後重跑 blk3，預期得到與 Codex 相近的列數，作為修正有效的驗證 |
+| C7 | **規則逼出「走最省事的路」：`=none`、虛構的埠、harness 變空** | 第一次提示後（約 37 分鐘）Qwen 把信心度與狀態改對了（blk0、blk1 變 medium／open，blk2、blk3 變 low／open），blk0、blk1 的 `signal` 也通過；但 blk2、blk3 的許多 `signal` 寫成 `=none`（混淆了「沒有訊號」`none` 與「常數」`=值`），還為 blk3 加了一個架構模型沒有的輸入 `_unused_input_placeholder`；因為 signal 被設成「沒有」，這兩個方塊的 harness 跑不了，`harness_result` 是空的，也就是為了通過格式檢查退到「宣告沒有對應」，沒有去找真正的訊號名 | 模型加工具 | 工具對這個誤用給專門訊息（已加：`validate_json` 與 `block_harness` 對 `=none` 的說明）；`none` 是合法值所以不能禁止，但可以加規則：整個方塊的輸入輸出全是 none 時，信心度必須是 low、狀態必須是 open，且 `unknown` 必須說明找不到的原因；埠必須和模型的 ports 一一對應（不得新增）|
 
 ### C6 對照：Qwen 與 Codex 的功能檢查（blk0 到 blk3）
 
@@ -95,4 +96,5 @@
 |---|---|---|
 | 10-19 08:29 | 提示檔 | 說明接續錯誤是我的、模型目錄位置、不要重複被拒絕的指令、從 blk2 繼續、重跑 validate |
 | 10-19 09:23 | 工具補強加提示檔 | signal 欄位與一致性規則（C5）、請回頭修 blk0 到 blk3 並重跑 harness |
+| 10-19 10:14 | 工具補強加提示檔（第二次）| 說明 `=none` 的錯誤（沒有訊號寫 `none`，`=值` 只用於常數）、不要加模型沒有的埠、blk2 與 blk3 要找可探測的訊號名再重跑 harness。**提示中有一句接近技術的導航資訊**：「key expansion 模組內的訊號路徑以 `tb_aes128_dec.uu_aes128_decrypt.uu_aes128_key_expansion.` 開頭」，這是訊號階層的命名，Qwen 在自己的檔案裡本來就用過，但它確實降低了找訊號的難度，比較時須註明 |
 第一次運行沒有這類協助（只有我回答一次 `rtl ask`、請它繼續兩次）。
