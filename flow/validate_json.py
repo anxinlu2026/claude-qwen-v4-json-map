@@ -50,6 +50,8 @@ for f in files:
         SIGOK = re.compile(rf"^(=[0-9a-fA-F_xXzZ']+|{SIGTOK}(\+{SIGTOK})*)$")
         sigs = [(f"{side} {p.get('arch_port')}", (p.get('rtl') or {}).get('signal')) for side in ('inputs', 'outputs') for p in d.get('ports', {}).get(side, [])] + [(f"extra_ports {e.get('signal')}", e.get('signal')) for e in d.get('extra_ports', [])]
         for where, sg in sigs:
+            if isinstance(sg, str) and re.match(r'^=\s*(none|unknown|n/a)$', sg.strip(), re.I):
+                bad(f, f"{where}: signal {sg!r}: 'none' (no RTL signal for this port) is written without '='; '=VALUE' is only for a constant (for example =3)"); continue
             if isinstance(sg, str) and sg not in ('none', 'unknown', 'n/a') and not SIGOK.match(sg.strip()):
                 bad(f, f"{where}: signal {sg[:60]!r} is not a signal name the tools can probe (use the RTL name, several joined with '+', a constant as =VALUE; explanations go in 'source' or 'unknown')")
         # confidence and status must agree with the tool's evidence: a function check with 0 rows is no evidence

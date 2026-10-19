@@ -33,6 +33,9 @@ res = {"block": f"blk{n}", "name": bid, "round": K, "time": time.strftime('%Y-%m
 if None in sigs or not outs or outs[0]['rtl']['signal'] in ('none', 'TODO', 'unknown', 'n/a'):
     res["error"] = "RTL signals missing for some model input/output port; fill them (or write 'none') before running the harness"
     print(res['error']); print('missing inputs:', [order[j] for j, s in enumerate(sigs) if s is None]); sys.exit(2)
+bad_eq = [x for x in sigs + [outs[0]['rtl']['signal']] if isinstance(x, str) and x.startswith('=') and not __import__('re').match(r"^=[0-9a-fA-F_xXzZ']+$", x)]
+if bad_eq:
+    print(f"ERROR: signal field(s) {bad_eq} are not valid: 'none' (no RTL signal) is written without '='; '=VALUE' is only for a constant such as =3. Without probeable signals no function check can run: find the RTL signal names (rtl signals WORD) or write 'none'/'unknown' and say why in 'unknown'."); sys.exit(3)
 outsig = outs[0]['rtl']['signal']
 when = opts.get('--when') or H.get('active_when')
 cmd = ['rtl', 'blockcheck', '--in'] + sigs + ['--out', outsig, '--model', f'python3 {mdir}/model_cli.py block {bid}', '--max', '40']
