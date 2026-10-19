@@ -45,6 +45,20 @@ for f in files:
                 if r.get('edge') not in EDGE: bad(f, f"{side} {p.get('arch_port')}: edge {r.get('edge')!r} not allowed")
                 if r.get('storage') not in STOR: bad(f, f"{side} {p.get('arch_port')}: storage {r.get('storage')!r} not allowed")
                 if r.get('signal') not in ('none',) and not r.get('source'): bad(f, f"{side} {p.get('arch_port')}: no source (evidence)")
+        # a signal field must be usable by the tools: RTL signal names joined with '+', a constant =VALUE, or none/unknown/n/a; not prose
+        SIGTOK = r"[A-Za-z_][\w$]*(\[[^\]\s]*\])*(\.[A-Za-z_][\w$]*(\[[^\]\s]*\])*)*"   # hierarchical name; every part may carry [index] or [hi:lo]
+        SIGOK = re.compile(rf"^(=[0-9a-fA-F_xXzZ']+|{SIGTOK}(\+{SIGTOK})*)$")
+        sigs = [(f"{side} {p.get('arch_port')}", (p.get('rtl') or {}).get('signal')) for side in ('inputs', 'outputs') for p in d.get('ports', {}).get(side, [])] + [(f"extra_ports {e.get('signal')}", e.get('signal')) for e in d.get('extra_ports', [])]
+        for where, sg in sigs:
+            if isinstance(sg, str) and sg not in ('none', 'unknown', 'n/a') and not SIGOK.match(sg.strip()):
+                bad(f, f"{where}: signal {sg[:60]!r} is not a signal name the tools can probe (use the RTL name, several joined with '+', a constant as =VALUE; explanations go in 'source' or 'unknown')")
+        # confidence and status must agree with the tool's evidence: a function check with 0 rows is no evidence
+        hr = d.get('harness_result') or {}; fcr = (hr.get('function_check') or {}).get('rows')
+        if fcr == 0:
+            rmc = hr.get('register_mapping_check') or {}
+            alt = d.get('alternative_evidence') or (rmc.get('expected_values') and rmc.get('seen_in_order') == rmc.get('expected_values'))
+            if isinstance(d.get('confidence'), dict) and d['confidence'].get('level') == 'high': bad(f, "confidence 'high' although the function check compared 0 rows (use low or medium, or give 'alternative_evidence')")
+            if d.get('status') == 'aligned' and not alt: bad(f, "status 'aligned' although the function check compared 0 rows and no 'alternative_evidence' is given (use open, or give the evidence)")
         for key, allowed in (('confidence', {'high', 'medium', 'low'}), ('difficulty', {'easy', 'medium', 'hard'})):
             if isinstance(d.get(key), dict) and d[key].get('level') not in allowed: bad(f, f'{key}.level must be one of {sorted(allowed)}')
         if isinstance(d.get('control'), dict) and d['control'].get('assessment') not in ('consistent', 'suspect', 'unknown'): bad(f, 'control.assessment must be consistent|suspect|unknown')

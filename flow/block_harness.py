@@ -38,6 +38,13 @@ when = opts.get('--when') or H.get('active_when')
 cmd = ['rtl', 'blockcheck', '--in'] + sigs + ['--out', outsig, '--model', f'python3 {mdir}/model_cli.py block {bid}', '--max', '40']
 if when: cmd += ['--when', when]
 t = subprocess.run(cmd, capture_output=True, text=True); text = t.stdout + t.stderr
+if 'cannot read signal name' in text or 'PROBE ERROR' in text:
+    bad_sig = [l.split('signal name', 1)[-1].strip()[:90] for l in text.splitlines() if 'cannot read signal name' in l][:3]
+    res['error'] = 'a signal field of your hdl file is not a signal name rtl can probe: ' + '; '.join(bad_sig)
+    res['hint'] = "write the RTL signal name itself (several joined with '+', arrays as x[0][1], a constant as =VALUE); explanations belong in 'source' or 'unknown' (schema section 4)"
+    json.dump(res, open(os.path.join(ex, f'tool-blk{n}-check-v{K}.json'), 'w'), ensure_ascii=False, indent=1)
+    usage.log(ex, 'block_harness', block=f'blk{n}', round=K, error='unprobeable signal field')
+    print('ERROR:', res['error']); print('HINT:', res['hint']); sys.exit(3)
 rows = []
 for line in text.splitlines():
     c = [x.strip() for x in line.split('|')]
