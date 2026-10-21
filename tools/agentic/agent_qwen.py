@@ -49,13 +49,22 @@ def main():
     # QWEN_MAX_TOKENS (optional): upper limit of the output (reasoning included) of one model request.
     if env.get("QWEN_MAX_TOKENS"):
         settings.setdefault("model", {}).setdefault("generationConfig", {}).setdefault("samplingParams", {})["max_tokens"] = int(env["QWEN_MAX_TOKENS"])
+    # QWEN_PRESENCE_PENALTY / QWEN_FREQUENCY_PENALTY / QWEN_REPEAT_PENALTY (optional): penalties on repeated tokens, sent with every request.
+    for var, key in (("QWEN_PRESENCE_PENALTY", "presence_penalty"), ("QWEN_FREQUENCY_PENALTY", "frequency_penalty"), ("QWEN_REPEAT_PENALTY", "repeat_penalty")):
+        if env.get(var):
+            settings.setdefault("model", {}).setdefault("generationConfig", {}).setdefault("samplingParams", {})[key] = float(env[var])
+    # QWEN_REASONING_EFFORT (optional): thinking level sent with every request (the model lists: false, low, medium, xhigh).
+    if env.get("QWEN_REASONING_EFFORT"):
+        settings.setdefault("model", {}).setdefault("generationConfig", {}).setdefault("samplingParams", {})["reasoning_effort"] = env["QWEN_REASONING_EFFORT"]
     # Without a version marker Qwen Code treats the file as an old-format file and rewrites it, dropping "model".
     settings["$version"] = 4
     os.makedirs(os.path.join(env["HOME"], ".qwen"), exist_ok=True)
     with open(os.path.join(env["HOME"], ".qwen", "settings.json"), "w") as f:
         json.dump(settings, f)
     print("Qwen Code settings:", json.dumps(settings))
-    cmd = ["qwen", "--yolo", "--output-format", "stream-json", "-m", env["QWEN_MODEL"],
+    # --include-partial-messages: the answer (reasoning included) is written to the log piece by piece while it is
+    # being produced, so a supervisor can follow it live.
+    cmd = ["qwen", "--yolo", "--output-format", "stream-json", "--include-partial-messages", "-m", env["QWEN_MODEL"],
            "--openai-base-url", env["OPENAI_BASE_URL"], "--openai-api-key", env.get("OPENAI_API_KEY", "ollama")]
     if env.get("CVDP_QWEN_OPENAI_LOG"):  # debugging aid: dump raw API requests/responses
         cmd += ["--openai-logging", "--openai-logging-dir", env["CVDP_QWEN_OPENAI_LOG"]]
