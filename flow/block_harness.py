@@ -3,6 +3,7 @@
 Reads hdl-blk<N>-rtl-v<K>.json (the RTL signals the HDL engineer mapped) and arch-blk<N>-model/harness-v<K>.json, then:
   function check: RTL's own probed block inputs -> python model block -> compare with the RTL block outputs (rtl blockcheck)
   input check:    the inputs the RTL actually gives the block, compared with the harness inputs (testbench stimulus through the model chain), in step order
+  output check:   (added in delegation_test/harness) the outputs the RTL actually gives the block, compared with the harness outputs of the same chain, in step order
 It writes both results into the HDL json ("harness_result") and into tool-blk<N>-check-v<K>.json, so the numbers are from the tool, not typed by hand.
 usage: block_harness.py EXCHANGE_DIR BLK_NUMBER [ROUND] [--when "rtl condition"] [--model-dir /tmp/ip_work/arch] [--no-write]
 The HDL json may carry "active_when": "<rtl expression>" at top level (the condition under which the block works; rtl blockcheck --when)."""
@@ -101,6 +102,22 @@ for s_ in steps:
         if all(w in (None, 'n/a') or (num(w) is not None and num(w) == num(g)) for w, g in zip(want, got)): found = True; pos = j + 1; break
     if found: hit += 1
     elif first_bad is None: first_bad = {"step": s_['step'], "wanted": dict(zip(order, want))}
+# output check: harness outputs vs the RTL block outputs seen on the rows, in step order (the harness output of a step is the model chain value, not RTL data)
+out_name = M['ports']['outputs'][0]['name']
+def step_out(s_):
+    o_ = s_.get('outputs') or {}
+    if out_name in o_: return o_[out_name]
+    return list(o_.values())[0] if len(o_) == 1 else None
+ohit = 0; osteps = 0; ofirst = None; opos = 0
+for s_ in steps:
+    want_o = step_out(s_)
+    if want_o in (None, 'n/a') or num(want_o) is None: continue
+    osteps += 1; found_o = False
+    for j in range(opos, len(rows)):
+        if num(rows[j]['rtl_out']) is not None and num(rows[j]['rtl_out']) == num(want_o): found_o = True; opos = j + 1; break
+    if found_o: ohit += 1
+    elif ofirst is None: ofirst = {"step": s_['step'], "wanted": {out_name: want_o}}
+res["output_check"] = {"steps": osteps, "steps_whose_outputs_were_seen_in_order": ohit, "not_seen": osteps - ohit, "first_step_not_seen": ofirst}
 res["mismatch_rows_compact"] = [{"t": r["t"], "rtl_out": r["rtl_out"], "model_out": r["model_out"]} for r in rows if r["result"].startswith("MISMATCH")][:8]
 # value mapping for stateful units: the architecture lists the values the unit's output register is expected to hold, in order
 # (harness field register_mapping.rows[*] with a key starting with "rtl_register" or "rtl_value"); check they appear in order in the RTL output
@@ -123,11 +140,13 @@ res["input_check"] = {"steps": len(steps), "steps_whose_inputs_were_seen_in_orde
 json.dump(res, open(os.path.join(ex, f'tool-blk{n}-check-v{K}.json'), 'w'), ensure_ascii=False, indent=1)
 if not opts.get('--no-write'):
     H['harness_result'] = {"function_check": {"rows": len(rows), "match": ok, "mismatch": bad, "raw": f"tool-blk{n}-check-v{K}.json"},
-                           "input_check": {"rows": len(steps), "match": hit, "mismatch": len(steps) - hit, "raw": f"tool-blk{n}-check-v{K}.json"}}
+                           "input_check": {"rows": len(steps), "match": hit, "mismatch": len(steps) - hit, "raw": f"tool-blk{n}-check-v{K}.json"},
+                           "output_check": {"rows": osteps, "match": ohit, "mismatch": osteps - ohit, "raw": f"tool-blk{n}-check-v{K}.json"}}
     if "register_mapping_check" in res: H['harness_result']['register_mapping_check'] = {k: res['register_mapping_check'][k] for k in ('expected_values', 'seen_in_order', 'first_not_seen')}
     json.dump(H, open(hp, 'w'), ensure_ascii=False, indent=1)
-usage.log(ex, 'block_harness', block=f'blk{n}', round=K, function_rows=len(rows), function_match=ok, function_mismatch=bad, input_steps=len(steps), input_seen=hit, mode=res.get('function_check_mode', 'model_cli'))
-print(f"blk{n} {bid}: function check rows {len(rows)}  match {ok}  mismatch {bad}   |   input check: {hit}/{len(steps)} harness steps' inputs seen in order")
+usage.log(ex, 'block_harness', block=f'blk{n}', round=K, function_rows=len(rows), function_match=ok, function_mismatch=bad, input_steps=len(steps), input_seen=hit, output_steps=osteps, output_seen=ohit, mode=res.get('function_check_mode', 'model_cli'))
+print(f"blk{n} {bid}: function check rows {len(rows)}  match {ok}  mismatch {bad}   |   input check: {hit}/{len(steps)} harness steps' inputs seen in order   |   output check: {ohit}/{osteps} harness steps' outputs seen in order")
 if 'register_mapping_check' in res: print('  register mapping check: %d of %d expected register values seen in order in the RTL output' % (res['register_mapping_check']['seen_in_order'], res['register_mapping_check']['expected_values']))
 if first_bad: print('  first harness step whose inputs the RTL never gave:', json.dumps(first_bad)[:300])
+if ofirst: print('  first harness step whose outputs the RTL never gave:', json.dumps(ofirst)[:300])
 for d in diffs[:3]: print('  mismatch row t=%s: xor(rtl,model) per byte: %s' % (d['t'], ' '.join(d['xor_per_byte'])))
